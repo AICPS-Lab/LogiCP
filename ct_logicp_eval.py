@@ -1,5 +1,5 @@
 """
-The main file for evaluations.
+The file to evaluate LogiCP and LogiCP-S performance on CT dataset. 
 """
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
@@ -81,8 +81,7 @@ def main():
     print("Loaded client dataset.")
 
     ############################
-    # evaluation on fhwa dataset.
-    # args.client = 100
+    # evaluation on fhwa dataset
 
     if args.mode == "eval":
         model_types = ["{}".format(args.model)]

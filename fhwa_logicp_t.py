@@ -1,3 +1,9 @@
+"""
+
+The file for LogiCP-T performance evaluation on fhwa dataset.
+
+"""
+
 import numpy as np
 import torch
 import torch.nn as nn

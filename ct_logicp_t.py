@@ -1,3 +1,10 @@
+"""
+The file to evaluate LogiCP-T performance on CT dataset. 
+
+
+"""
+
+
 import numpy as np
 import torch
 import torch.nn as nn

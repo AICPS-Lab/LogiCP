@@ -1,5 +1,5 @@
 """
-The main file for evaluations.
+The main file for LogiCP and LogiCP-S evaluation on fhwa dataset. 
 """
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
