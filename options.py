@@ -9,10 +9,10 @@ def args_parser():
     parser = argparse.ArgumentParser()
 
     # main args
-    parser.add_argument('--method', type=str, default="FedSTL", choices=["Ditto", "FedAvg", "FedRep", "IFCA", "FedProx", "FedSTL"])
+    parser.add_argument('--method', type=str, default="LogiCP", choices=["Ditto", "FedAvg", "FedRep", "IFCA", "FedProx", "FedSTL"])
     parser.add_argument('--model', type=str, default="RNN", choices=["LSTM", "GRU", "RNN", "transformer"])
     parser.add_argument('--epoch', type=int, default=10, help="# of training epoch")
-    parser.add_argument('--mode', type=str, default="train_cp", choices=['train', 'train-logic', 'eval', 'eval-sumo', 'pretrain_calib', 'train_cp', 'eval_visual'])
+    parser.add_argument('--mode', type=str, default="eval", choices=['train', 'train-logic', 'eval', 'eval-sumo', 'pretrain_calib', 'train_cp', 'eval_visual'])
     parser.add_argument('--dataset', type=str, default="fhwa", choices=['sumo', 'fhwa', 'ct'])
     parser.add_argument('--client', type=int, default=100)
     parser.add_argument('--cluster', type=int, default=10)

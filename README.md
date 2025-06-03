@@ -22,28 +22,33 @@ University of Dayton, "Temperature Data from Around the World Attracts Web Visit
 Releases. 9948.
 https://ecommons.udayton.edu/news_rls/9948
 
-### 2. Distributed CP Implementation
+### 3. Distributed CP Implementation
 
 For the distributed CP implementation, specifically, the computation of quantiles at both the client and cluster levels, please refer to compute.py. 
 
 The original source of this implementation is adapted from: https://github.com/pierreHmbt/FedCP-QQ
 
-### 3. Network Training and Evaluation 
+### 4. LogiCP Network Training and Evaluation 
 - To train the LogiCP model on FHWA data, use the following command: 
 
     For pretrain process, run: 
     ```
-    python main.py --mode pretrain_calib --dataset fhwa --client 50 --cluster 5 --frac 1 --sep_type spec_m --cp_epoch 30
+    python main.py --model RNN --mode pretrain_calib --dataset fhwa --client 50 --cluster 5 --frac 1 --sep_type spec_m --cp_epoch 30
     ```
 
     For training process, run:
     ```
-    python main.py --mode train_cp --dataset fhwa --client 50 --cluster 5 --frac 1 --sep_type spec_m --cp_epoch 30
+    python main.py --model RNN --mode train_cp --dataset fhwa --client 50 --cluster 5 --frac 1 --sep_type spec_m --cp_epoch 30
     ```
 
-    For evaluation, run: 
+    For evaluation of LogiCP and LogiCP-S, run: 
     ```
-    python eval.py --mode eval --dataset fhwa --client 50 --cluster 5 --frac 1 --sep_type spec_m --cp_epoch 30
+    python fhwa_logicp_eval.py --model RNN --mode eval --dataset fhwa --client 50 --cluster 5 --frac 1 --sep_type spec_m --cp_epoch 30
+    ```
+
+    For evaluation of LogiCP-T, run 
+    ```
+    python fhwa_logicp_t.py --model RNN --mode eval --dataset fhwa --client 50 --cluster 5 --frac 1 --sep_type spec_m --cp_epoch 30
     ```
 
 - To train the LogiCP model on CT data, use the following command: 
@@ -58,11 +63,17 @@ The original source of this implementation is adapted from: https://github.com/p
     python main.py --mode train_cp --dataset ct --client 50 --cluster 5 --frac 1 --sep_type spec_m --cp_epoch 30
     ```
 
-    For evaluation, run: 
+    For evaluation of LogiCP and LogiCP-S, run: 
     ```
-    python eval.py --mode eval --dataset ct --client 50 --cluster 5 --frac 1 --sep_type spec_m --cp_epoch 30
+    python ct_logicp_eval.py --model RNN --mode eval --dataset ct --client 50 --cluster 5 --frac 1 --sep_type spec_m --cp_epoch 30
     ```
-### 4. Parameter Descriptions
+
+    For evaluation of LogiCP-T, run 
+    ```
+    python ct_logicp_t.py --model RNN --mode eval --dataset fhwa --client 50 --cluster 5 --frac 1 --sep_type spec_m --cp_epoch 30
+    ```
+
+### 5. Parameter Descriptions
 We provide a description of the parameters implemented in option.py below:
 `--mode` Select the mode from these options: `pretrain_calib`, `train_cp`, `eval`\
 `--sep_type` The way to determine cluster: `spec_m`, `value`\ 
@@ -77,7 +88,53 @@ We provide a description of the parameters implemented in option.py below:
 
 For additional configuration details, please refer directly to option.py.
 
-### 5. Backbone models implementation
+### 6. Baseline Network Training and Evaluation 
+- To train the FedAvg model on FHWA data, use the following command: 
+
+    For training process, run:
+    ```
+    python main_fedavg.py --method FedAvg --mode train --dataset fhwa --client 50 --cluster 5 --frac 1 --epoch 30
+    ```
+    For evaluation, run: 
+    ```
+    python eval.py --method FedAvg --mode eval --dataset fhwa --client 50 --cluster 5 --frac 1 --epoch 30
+    ```
+
+- To train the IFCA model on FHWA data, use the following command: 
+
+    For training process, run:
+    ```
+    python main_ifca_ori.py --method IFCA --mode train --dataset fhwa --client 50 --cluster 5 --frac 1 --epoch 30
+    ```
+    For evaluation, run: 
+    ```
+    python eval.py --method IFCA --mode eval --dataset fhwa --client 50 --cluster 5 --frac 1 --epoch 30
+    ```
+
+- To train the CP-IFCA model on FHWA data, use the following command: 
+
+    For training process, run:
+    ```
+    python main_ifca_ori.py --method CP-IFCA --mode train --dataset fhwa --client 50 --cluster 5 --sep_type value --frac 1 --epoch 30
+    ```
+    For evaluation, run: 
+    ```
+    python eval.py --method CP-IFCA --mode eval --dataset fhwa --client 50 --cluster 5 --frac 1 --sep_type value --epoch 30
+    ```
+
+- To train the FedSTL model on FHWA data, use the following command: 
+
+    For training process, run:
+    ```
+    python main_fedstl.py --method FedSTL --mode train-logic --dataset fhwa --client 50 --cluster 5 --frac 1 --cp_epoch 30
+    ```
+
+    For evaluation, run: 
+    ```
+    python eval.py --method FedSTL --mode eval --dataset fhwa --client 50 --cluster 5 --frac 1 --cp_epoch 30
+    ```
+
+### 6. Backbone models implementation
 RNN, LSTM, GRU, Transformer were implemented in the file `network.py` and `transform.py`. 
 
 
@@ -86,3 +143,4 @@ RNN, LSTM, GRU, Transformer were implemented in the file `network.py` and `trans
 - https://github.com/pierreHmbt/FedCP-QQ
 - https://github.com/susmitjha/TeLEX 
 - https://github.com/KasperGroesLudvigsen/influenza_transformer 
+- https://github.com/AICPS-Lab/FedSTL

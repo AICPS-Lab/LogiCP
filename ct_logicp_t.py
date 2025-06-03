@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from utils.update import LocalUpdate, LocalUpdateProp, compute_cluster_id_eval, cluster_id_property, cluster_explore, dic_loader, find_group_info
-from utils_training import get_device, to_device, save_model, get_client_dataset, get_shared_dataset, model_init, get_shared_dataset_1, get_shared_dataset_2
+from utils_training import get_device, to_device, save_model, get_shared_dataset, model_init
 import os
 import copy
 from options import args_parser
@@ -68,14 +68,12 @@ def main():
 
     if args.mode == "eval":
 
-        model_types = ["LSTM"]
+        model_types = ["{}".format(args.model)]
 
         cp_dic = dic_loader(args)
 
         cluster_id = {int(group): clients_data["clients"] for group, clients_data in cp_dic.items()}
         client2cluster = {client: group for group, clients in cluster_id.items() for client in clients}
-        # print()
-
 
         print("==============================================================")
         for type in model_types:
@@ -83,9 +81,6 @@ def main():
             local_loss = []
             local_cons_loss = []
             local_rho = []
-
-            s_case = 0
-            f_case = 0
 
             model_path = "hdd/saved_models/"
 
@@ -117,9 +112,6 @@ def main():
             print("Mean:", np.mean(local_rho))
             print("Error bar:", error)
             print()
-
-
-
 
 
 if __name__ == '__main__':

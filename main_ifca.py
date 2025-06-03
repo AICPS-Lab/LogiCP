@@ -1,5 +1,5 @@
 """
-The main file for training and evaluating FedSTL format
+The main file for training and evaluating IFCA format
 with options to compare with other benchmarks.
 """
 #!/usr/bin/env python

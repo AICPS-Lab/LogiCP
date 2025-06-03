@@ -55,7 +55,7 @@ def dic_loader(args):
 
     if args.sep_type == "spec_m":
         if args.dataset == 'fhwa':
-            cp_pat = f"hdd/cluster_cp_result_with_specm_{args.model}_{args.cp_epoch}_{args.client}/FedSTL_Cluster.json"
+            cp_pat = f"hdd/cluster_cp_result_with_specm_{args.model}_{args.cp_epoch}_{args.client}/LogiCP_Cluster.json"
             print()
             print(f"the cp region is loaded from {cp_pat}")
             print()
@@ -63,7 +63,7 @@ def dic_loader(args):
                 cp_dic = json.load(file)
 
         elif args.dataset == 'ct':
-            cp_pat = f"ct/cluster_cp_result_with_specm_{args.model}_{args.cp_epoch}_{args.client}/FedSTL_Cluster.json"
+            cp_pat = f"ct/cluster_cp_result_with_specm_{args.model}_{args.cp_epoch}_{args.client}/LogiCP_Cluster.json"
             with open(cp_pat, 'r') as file:
                 cp_dic = json.load(file)
             print()
@@ -130,7 +130,11 @@ def new_loss_func(cp_value, y_gt, y_pred):
     return loss
 
 
-def cp_loss(cp_value, y_gt, y_pred):
+def loss_func_cp(cp_value, y_gt, y_pred):
+
+    print()
+    print('using the correct cp. ')
+    print()
 
     if isinstance(cp_value, list):
         cp_value = torch.tensor(cp_value, dtype=y_pred.dtype, device=y_pred.device)
@@ -266,9 +270,9 @@ def transformer_prop_calib(dataloader, net, args, loss_func, lr, w_glob_keys=Non
         
     return c_tuda_list
 
-def transformer_prop_train(dataloader, net, args, loss_func, lr, w_glob_keys=None, cp_value=None):
+def transformer_prop_train(dataloader, net, args, loss_func, lr, w_glob_keys=None, cp_value=None, lf = None):
 
-    loss_func_cp = new_loss_func
+    loss_func_cp = lf
     loss_func = nn.MSELoss(reduction='mean')
 
     net.batch_size = 64
@@ -1340,9 +1344,9 @@ def cluster_id_property(cluster_models, client_dataset, args, idxs_users):
 
 
 
-def cluster_explore(net, w_glob_keys, lr, args, dataloaders, cp_value, loss_func = cp_loss):
+def cluster_explore(net, w_glob_keys, lr, args, dataloaders, cp_value, lf = new_loss_func):
 
-    loss_func_cp = loss_func
+    loss_func_cp = lf
     loss_func = nn.MSELoss(reduction='mean')
 
     net.batch_size = 64
@@ -1406,13 +1410,9 @@ def cluster_explore(net, w_glob_keys, lr, args, dataloaders, cp_value, loss_func
 
                 num_updates += 1
                 batch_loss.append(loss.item())
-                # batch_cons_loss.append(batch_loss)
-                
-                # if num_updates == args.local_updates_cp: break
-                
+
             epoch_loss.append(sum(batch_loss)/len(batch_loss))
-            # epoch_cons_loss.append(sum(batch_cons_loss)/len(batch_cons_loss))
-    
+
     return net.state_dict(), sum(epoch_loss)/len(epoch_loss)
 
 
@@ -1551,14 +1551,14 @@ class LocalUpdateProp(object):
 
         return c_tuda_list
 
-    def train(self, net, w_glob_keys, last=False, dataset_test=None, loss_func = None, ind=-1, idx=-1, lr=0.001, cp_value=None):
+    def train(self, net, w_glob_keys, last=False, dataset_test=None, lf = new_loss_func, ind=-1, idx=-1, lr=0.001, cp_value=None):
 
-        self.loss_func_cp = loss_func
+        self.loss_func_cp = lf
         self.loss_func = nn.MSELoss(reduction='mean')
         net.batch_size = 64
         cp_value = cp_value
         if net.model_type == 'transformer':
-            net, avg_ep_loss = transformer_prop_train(self.ldr_train, net, self.args, self.loss_func, lr, w_glob_keys=w_glob_keys, cp_value=cp_value)
+            net, avg_ep_loss = transformer_prop_train(self.ldr_train, net, self.args, self.loss_func, lr, w_glob_keys=w_glob_keys, cp_value=cp_value, lf=lf)
             return net.state_dict(), avg_ep_loss, self.idxs
         
         else:

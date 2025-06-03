@@ -40,7 +40,7 @@ def model_init(args):
             print(f"LogiCP Loading vanilla RNN model.")
             print(f"================================")
 
-        elif args.model == 'RNN' and args.mode == 'train_cp' and args.method == 'FedSTL':
+        elif args.model == 'RNN' and args.mode == 'train_cp' and args.method == 'LogiCP':
             glob_model = ShallowRegressionRNN(input_dim=2, batch_size=args.batch_size, time_steps=96, sequence_len=24, hidden_dim=16)
             clust_weight_keys_path = "hdd/saved_pretrain_models/" 
             clust_weight_keys_p = os.path.join(clust_weight_keys_path, '{}_{}_{}_glob_epoch_{}.pt'.format(args.dataset, args.model, args.property_type, args.epoch))
@@ -49,7 +49,7 @@ def model_init(args):
             print(f"LogiCP Loading pretrained RNN model.")
             print(f"================================")
 
-        elif args.model == 'RNN' and args.mode == 'train_cp' and args.method != 'FedSTL':
+        elif args.model == 'RNN' and args.mode == 'train_cp' and args.method != 'LogiCP':
             glob_model = ShallowRegressionRNN(input_dim=2, batch_size=args.batch_size, time_steps=96, sequence_len=24, hidden_dim=16)
             clust_weight_keys_path = f"hdd_{args.method}/saved_pretrain_models_{args.seq_type}_only/" 
             clust_weight_keys_p = os.path.join(clust_weight_keys_path, '{}_{}_{}_glob_epoch_{}.pt'.format(args.dataset, args.model, args.property_type, args.epoch))
@@ -62,7 +62,7 @@ def model_init(args):
             print(f"LogiCP Loading vanilla LSTM model.")
             print(f"================================")
 
-        elif args.model == 'LSTM' and args.mode == 'train_cp' and args.method == 'FedSTL':
+        elif args.model == 'LSTM' and args.mode == 'train_cp' and args.method == 'LogiCP':
             glob_model = ShallowRegressionLSTM(input_dim=2, batch_size=args.batch_size, time_steps=96, sequence_len=24, hidden_dim=16)
             clust_weight_keys_path = f"hdd/saved_pretrain_models/" 
             clust_weight_keys_p = os.path.join(clust_weight_keys_path, '{}_{}_{}_glob_epoch_{}.pt'.format(args.dataset, args.model, args.property_type, args.epoch))
@@ -71,7 +71,7 @@ def model_init(args):
             print(f"LogiCP oading pretrained LSTM model.")
             print(f"================================")
 
-        elif args.model == 'LSTM' and args.mode == 'train_cp' and args.method != 'FedSTL':
+        elif args.model == 'LSTM' and args.mode == 'train_cp' and args.method != 'LogiCP':
             glob_model = ShallowRegressionLSTM(input_dim=2, batch_size=args.batch_size, time_steps=96, sequence_len=24, hidden_dim=16)
             clust_weight_keys_path = f"hdd_{args.method}/saved_pretrain_models_cp_only/" 
             clust_weight_keys_p = os.path.join(clust_weight_keys_path, '{}_{}_{}_glob_epoch_{}.pt'.format(args.dataset, args.model, args.property_type, args.epoch))
@@ -84,7 +84,7 @@ def model_init(args):
             print(f"LogiCP Loading vanilla transformer model.")
             print(f"================================")
 
-        elif args.model == 'transformer' and args.mode == 'train_cp' and args.method == 'FedSTL':
+        elif args.model == 'transformer' and args.mode == 'train_cp' and args.method == 'LogiCP':
             glob_model = TimeSeriesTransformer()
             clust_weight_keys_path = "hdd/saved_pretrain_models/" 
             clust_weight_keys_p = os.path.join(clust_weight_keys_path, '{}_{}_{}_glob_epoch_{}.pt'.format(args.dataset, args.model, args.property_type, args.epoch))
@@ -93,7 +93,7 @@ def model_init(args):
             print(f"LogiCP Loading pretrained transformer model.")
             print(f"================================")
 
-        elif args.model == 'transformer' and args.mode == 'train_cp' and args.method != 'FedSTL':
+        elif args.model == 'transformer' and args.mode == 'train_cp' and args.method != 'LogiCP':
             glob_model = TimeSeriesTransformer()
             clust_weight_keys_path = f"hdd_{args.method}/saved_pretrain_models_{args.sep_type}_only/"
             clust_weight_keys_p = os.path.join(clust_weight_keys_path, '{}_{}_{}_glob_epoch_{}.pt'.format(args.dataset, args.model, args.property_type, args.epoch))
@@ -106,7 +106,7 @@ def model_init(args):
             print(f"LogiCP Loading vanilla GRU model.")
             print(f"================================")
 
-        elif args.model == 'GRU' and args.mode == 'train_cp' and args.method == 'FedSTL':
+        elif args.model == 'GRU' and args.mode == 'train_cp' and args.method == 'LogiCP':
             glob_model = ShallowRegressionGRU(input_dim=2, batch_size=args.batch_size, time_steps=96, sequence_len=24, hidden_dim=16)
             clust_weight_keys_path = f"hdd/saved_pretrain_models/" 
             clust_weight_keys_p = os.path.join(clust_weight_keys_path, '{}_{}_{}_glob_epoch_{}.pt'.format(args.dataset, args.model, args.property_type, args.epoch))
@@ -115,7 +115,7 @@ def model_init(args):
             print(f"LogiCP ading pretrained GRU model.")
             print(f"================================")
 
-        elif args.model == 'GRU' and args.mode == 'train_cp' and args.method != 'FedSTL':
+        elif args.model == 'GRU' and args.mode == 'train_cp' and args.method != 'LogiCP':
             glob_model = ShallowRegressionGRU(input_dim=2, batch_size=args.batch_size, time_steps=96, sequence_len=24, hidden_dim=16)
             clust_weight_keys_path = f"hdd_{args.method}/saved_pretrain_models_cp_only/" 
             clust_weight_keys_p = os.path.join(clust_weight_keys_path, '{}_{}_{}_glob_epoch_{}.pt'.format(args.dataset, args.model, args.property_type, args.epoch))
@@ -133,7 +133,7 @@ def model_init(args):
             print(f"Loading vanilla RNN model.")
             print(f"================================")
 
-        elif args.model == 'RNN' and args.mode == 'train_cp' and args.method == 'FedSTL':
+        elif args.model == 'RNN' and args.mode == 'train_cp' and args.method == 'LogiCP':
             glob_model = ShallowRegressionRNN(input_dim=2, batch_size=args.batch_size, time_steps=96, sequence_len=24, hidden_dim=16)
             clust_weight_keys_path = "ct/saved_pretrain_models/" 
             clust_weight_keys_p = os.path.join(clust_weight_keys_path, '{}_{}_{}_glob_epoch_{}.pt'.format(args.dataset, args.model, args.property_type, args.epoch))
@@ -142,7 +142,7 @@ def model_init(args):
             print(f"Loading pretrained RNN model.")
             print(f"================================")
 
-        elif args.model == 'RNN' and args.mode == 'train_cp' and args.method != 'FedSTL':
+        elif args.model == 'RNN' and args.mode == 'train_cp' and args.method != 'LogiCP':
             glob_model = ShallowRegressionRNN(input_dim=2, batch_size=args.batch_size, time_steps=96, sequence_len=24, hidden_dim=16)
             clust_weight_keys_path = f"ct_{args.method}/saved_pretrain_models_{args.sep_type}_only/" 
             clust_weight_keys_p = os.path.join(clust_weight_keys_path, '{}_{}_{}_glob_epoch_{}.pt'.format(args.dataset, args.model, args.property_type, args.epoch))
@@ -155,7 +155,7 @@ def model_init(args):
             print(f"Loading vanilla CT LSTM model.")
             print(f"================================")
 
-        elif args.model == 'LSTM' and args.mode == 'train_cp' and args.method == 'FedSTL':
+        elif args.model == 'LSTM' and args.mode == 'train_cp' and args.method == 'LogiCP':
             glob_model = ShallowRegressionLSTM(input_dim=2, batch_size=args.batch_size, time_steps=96, sequence_len=24, hidden_dim=16)
             clust_weight_keys_path = f"ct/saved_pretrain_models/" 
             clust_weight_keys_p = os.path.join(clust_weight_keys_path, '{}_{}_{}_glob_epoch_{}.pt'.format(args.dataset, args.model, args.property_type, args.epoch))
@@ -164,7 +164,7 @@ def model_init(args):
             print(f"Loading pretrained CT LSTM model.")
             print(f"================================")
 
-        elif args.model == 'LSTM' and args.mode == 'train_cp' and args.method != 'FedSTL':
+        elif args.model == 'LSTM' and args.mode == 'train_cp' and args.method != 'LogiCP':
             glob_model = ShallowRegressionLSTM(input_dim=2, batch_size=args.batch_size, time_steps=96, sequence_len=24, hidden_dim=16)
             clust_weight_keys_path = f"ct_{args.method}/saved_pretrain_models_{args.sep_type}_only/" 
             clust_weight_keys_p = os.path.join(clust_weight_keys_path, '{}_{}_{}_glob_epoch_{}.pt'.format(args.dataset, args.model, args.property_type, args.epoch))
@@ -177,7 +177,7 @@ def model_init(args):
             print(f"Loading vanilla CT GRU model.")
             print(f"================================")
 
-        elif args.model == 'GRU' and args.mode == 'train_cp' and args.method == 'FedSTL':
+        elif args.model == 'GRU' and args.mode == 'train_cp' and args.method == 'LogiCP':
             glob_model = ShallowRegressionGRU(input_dim=2, batch_size=args.batch_size, time_steps=96, sequence_len=24, hidden_dim=16)
             clust_weight_keys_path = f"ct/saved_pretrain_models/" 
             clust_weight_keys_p = os.path.join(clust_weight_keys_path, '{}_{}_{}_glob_epoch_{}.pt'.format(args.dataset, args.model, args.property_type, args.epoch))
@@ -186,7 +186,7 @@ def model_init(args):
             print(f"Loading pretrained CT GRU model.")
             print(f"================================")
 
-        elif args.model == 'GRU' and args.mode == 'train_cp' and args.method != 'FedSTL':
+        elif args.model == 'GRU' and args.mode == 'train_cp' and args.method != 'LogiCP':
             glob_model = ShallowRegressionGRU(input_dim=2, batch_size=args.batch_size, time_steps=96, sequence_len=24, hidden_dim=16)
             clust_weight_keys_path = f"ct_{args.method}/saved_pretrain_models_{args.sep_type}_only/" 
             clust_weight_keys_p = os.path.join(clust_weight_keys_path, '{}_{}_{}_glob_epoch_{}.pt'.format(args.dataset, args.model, args.property_type, args.epoch))
@@ -199,7 +199,7 @@ def model_init(args):
             print(f"Loading vanilla CT transformer model.")
             print(f"================================")
 
-        elif args.model == 'transformer' and args.mode == 'train_cp' and args.method == 'FedSTL':
+        elif args.model == 'transformer' and args.mode == 'train_cp' and args.method == 'LogiCP':
             glob_model = TimeSeriesTransformer()
             clust_weight_keys_path = "ct/saved_pretrain_models/" 
             clust_weight_keys_p = os.path.join(clust_weight_keys_path, '{}_{}_{}_glob_epoch_{}.pt'.format(args.dataset, args.model, args.property_type, args.epoch))
@@ -209,7 +209,7 @@ def model_init(args):
             print(f"Loading pretrained CT transformer model.")
             print(f"================================")
 
-        elif args.model == 'transformer' and args.mode == 'train_cp' and args.method != 'FedSTL':
+        elif args.model == 'transformer' and args.mode == 'train_cp' and args.method != 'LogiCP':
             glob_model = TimeSeriesTransformer()
             clust_weight_keys_path = f"ct_{args.method}/saved_pretrain_models_{args.sep_type}_only/"
             clust_weight_keys_p = os.path.join(clust_weight_keys_path, '{}_{}_{}_glob_epoch_{}.pt'.format(args.dataset, args.model, args.property_type, args.epoch))
@@ -224,8 +224,7 @@ def get_shared_dataset(client_id, dataset_name):
     """
     dataset_array = {}
     if dataset_name == 'fhwa':    
-        # dataset_path = "fhwa_dataset/" 
-        dataset_path = "torch_dataset_ver5/" 
+        dataset_path = "fhwa_dataset/" 
     elif dataset_name == 'ct':
         dataset_path = "ct_dataset/"
 
@@ -422,10 +421,10 @@ def save_cp_result_with_sep_type(args, client_dataset, global_quantile_array, gl
                 cluster_file = get_cluster_result(grouped_indices[i], cp_size_cluster)
                 final_cp_file[i] = cluster_file
 
-            if args.method == 'FedSTL':
+            if args.method == 'LogiCP':
                 cluster_path_cp = "hdd/cluster_cp_result_with_cp/"
             
-            elif args.method != 'FedSTL':
+            elif args.method != 'LogiCP':
                 cluster_path_cp = f"hdd_{args.method}/cluster_cp_result_with/"
 
             save_cluster_result(cluster_path_cp, final_cp_file, args.method)
@@ -479,10 +478,10 @@ def save_cp_result_with_sep_type(args, client_dataset, global_quantile_array, gl
             }
 
         converted_data = {key: convert_np_int_to_int(value) for key, value in final_cp_file.items()}
-        if args.dataset == 'fhwa' and args.method == "FedSTL":
+        if args.dataset == 'fhwa' and args.method == "LogiCP":
             cluster_path_spec = f"hdd/cluster_cp_result_with_specm_{args.model}_{args.cp_epoch}_{args.client}/"
         
-        elif args.dataset == 'ct' and args.method == 'FedSTL':
+        elif args.dataset == 'ct' and args.method == 'LogiCP':
             cluster_path_spec = f"{args.dataset}/cluster_cp_result_with_specm_{args.model}_{args.cp_epoch}_{args.client}/"
         save_cluster_result(cluster_path_spec, converted_data, args.method)
 

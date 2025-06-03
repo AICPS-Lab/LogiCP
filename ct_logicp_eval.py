@@ -9,7 +9,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from utils.update import LocalUpdate, LocalUpdateProp, compute_cluster_id_eval, cluster_id_property, cluster_explore
-from utils_training import get_device, to_device, save_model, get_client_dataset, get_shared_dataset, model_init, get_shared_dataset_1, get_shared_dataset_2
+from utils_training import get_device, to_device, save_model, get_shared_dataset, model_init
 import os
 import copy
 from options import args_parser
@@ -64,18 +64,6 @@ def main():
     args.device = get_device()
     
     client_dataset = {}
-
-    # for c in range(args.client): # 100
-    #     client_dataset[c] = {}
-    #     train_loader_private, trainset_shared, cal_loader_private, cal_shared, val_loader, test_loader, dataset_len = get_shared_dataset_1(c, args.dataset)
-        
-    #     client_dataset[c]["train_private"] = train_loader_private # private dataset loader
-    #     client_dataset[c]["train_shared"] = trainset_shared
-    #     client_dataset[c]["val"] = val_loader
-    #     client_dataset[c]["test"] = test_loader
-    #     client_dataset[c]["len"] = dataset_len
-    #     client_dataset[c]["cal"] = cal_loader_private
-    #     client_dataset[c]["calib_shared"] = cal_shared
     
     for c in range(args.client): # 100
         client_dataset[c] = {}
@@ -97,15 +85,14 @@ def main():
     # args.client = 100
 
     if args.mode == "eval":
-        model_types = ["transformer"]
+        model_types = ["{}".format(args.model)]
 
         print("==============================================================")
         for type in model_types:
-            print("Evaluating FedSTL on model (client teacher)", type)
+            print("Evaluating LogiCP on model (client teacher)", type)
             local_loss = []
             local_cons_loss = []
             local_rho = []
-            # if args.dataset == 'fhwa':
                 
             model_path = "hdd/saved_models/"
 
@@ -120,24 +107,6 @@ def main():
                 local_cons_loss.append(copy.deepcopy(cons_loss))
                 local_rho.append(copy.deepcopy(rho_perc.item()))
                 print(loss, cons_loss, idx, rho_perc)
-            
-            # Sort and display client losses
-            sorted_losses = sort_client_losses(local_loss)
-            total_loss = []
-            index_list = []
-            print("Sorted client losses (index, loss):")
-            for idx, loss in sorted_losses:
-                print(f"Client {idx}: Loss = {loss:.4f}")
-                total_loss.append(loss)
-                index_list.append(idx)
-            
-            print(np.mean(total_loss[:70]))
-            print(np.mean(total_loss[:60]))
-            print(np.mean(total_loss[:80]))
-            print(np.mean(total_loss[:50]))
-            print(np.mean(total_loss[:100]))
-            print(index_list[:100])
-            print(len(index_list[:100]))
 
             print("Local loss:")
             std = np.std(local_loss)
@@ -162,7 +131,7 @@ def main():
 
         print("==============================================================")
         for type in model_types:
-            print("Evaluating FedSTL on model", type)
+            print("Evaluating LogiCP on model", type)
             local_loss = []
             local_cons_loss = []
             local_rho = []
@@ -179,8 +148,7 @@ def main():
 
             args.frac = 1
             idxs_users = [i for i in range(args.client)]
-            # print(idxs_users)
-            # exit(0)
+
             cluster_id = cluster_id_property(cluster_models, client_dataset, args, idxs_users)   # cluster: clients
             client2cluster = get_dict_keys(cluster_id, idxs_users)
 
@@ -329,5 +297,3 @@ if __name__ == '__main__':
     
     finally:
         print('\nDone.')
-        # sys.stdout.close()
-        # sys.stdout=stdoutOrigin

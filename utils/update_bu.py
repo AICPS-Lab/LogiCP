@@ -103,13 +103,13 @@ def cp_guarantee_ratio_calculation(y_batch, cp_value):
 def dic_loader(args):
 
     if args.sep_type == "spec_m":
-        cp_pat = f"hdd/cluster_cp_result_with_specm_{args.model}_{args.cp_epoch}_{args.client}/FedSTL_Cluster.json"
+        cp_pat = f"hdd/cluster_cp_result_with_specm_{args.model}_{args.cp_epoch}_{args.client}/LogiCP_Cluster.json"
 
         with open(cp_pat, 'r') as file:
             cp_dic = json.load(file)
     
     if args.sep_type == "cp":
-        cp_pat = "hdd/cluster_cp_result_with_cp/FedSTL_Cluster.json"
+        cp_pat = "hdd/cluster_cp_result_with_cp/LogiCP_Cluster.json"
 
         with open(cp_pat, 'r') as file:
             cp_dic = json.load(file)

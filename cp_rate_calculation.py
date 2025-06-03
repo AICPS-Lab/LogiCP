@@ -82,7 +82,7 @@ def main():
     
     print("Loaded client dataset.")
 
-    if args.mode == "eval" and args.method == 'FedSTL':
+    if args.mode == "eval" and args.method == 'LogiCP':
         model_types = ["RNN"]
 
         cp_dic = dic_loader(args)
@@ -92,7 +92,7 @@ def main():
 
         print("==============================================================")
         for type in model_types:
-            print("Evaluating FedSTL on model (client teacher)", type)
+            print("Evaluating LogiCP on model (client teacher)", type)
             local_loss = []
             local_cons_loss = []
             local_rho = []
@@ -163,7 +163,7 @@ def main():
         # exit(0)
         print("==============================================================")
         for type in model_types:
-            print("Evaluating FedSTL on model", type)
+            print("Evaluating LogiCP on model", type)
             local_loss = []
             local_cons_loss = []
             local_rho = []

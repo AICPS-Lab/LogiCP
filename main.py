@@ -7,7 +7,7 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 from IoTData import SequenceDataset
-from utils.update import LocalUpdateProp, cluster_explore, dic_loader, find_group_info, cp_loss
+from utils.update import LocalUpdateProp, cluster_explore, dic_loader, find_group_info, loss_func_cp
 from utils_training import to_device, save_model, model_init, get_shared_dataset, save_cp_result_with_sep_type, get_cp_qq_settings
 import copy
 import matplotlib.pyplot as plt
@@ -269,7 +269,7 @@ def main():
                 net_local.load_state_dict(w_local)
 
                 cp_value = find_group_info(cp_dic, c)
-                w_local, loss, idx = local.train(net=net_local.to(args.device), idx=c, w_glob_keys=clust_weight_keys, loss_func=cp_loss, lr=args.max_lr, last=last, cp_value=cp_value)
+                w_local, loss, idx = local.train(net=net_local.to(args.device), idx=c, w_glob_keys=clust_weight_keys, lr=args.max_lr, last=last, cp_value=cp_value)
                 
                 local_loss.append(copy.deepcopy(loss))
                 total_len += client_dataset[c]["len"][0]
@@ -341,9 +341,7 @@ def main():
                     cp_value = cp_dic['{}'.format(cluster)]["cp_value"]
 
                     w_local, loss = cluster_explore(net=net_local.to(args.device), 
-                                                    w_glob_keys=clust_weight_keys, 
-                                                    lr=args.max_lr, args=args, 
-                                                    dataloaders=cluster_train_loader, cp_value=cp_value)
+                                                    w_glob_keys=clust_weight_keys, lr=args.max_lr, args=args, dataloaders=cluster_train_loader, cp_value=cp_value)
                     
                     for key in glob_weight.keys():
                         cluster_weights[cluster][key] = w_local[key]

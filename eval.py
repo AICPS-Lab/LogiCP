@@ -97,11 +97,11 @@ def main():
     # args.client = 100
 
     if args.mode == "eval":
-        model_types = ["transformer"]
+        model_types = ["{}".format(args.model)]
 
         print("==============================================================")
         for type in model_types:
-            print("Evaluating FedSTL on model (client teacher)", type)
+            print("Evaluating LogiCP on model (client teacher)", type)
             local_loss = []
             local_cons_loss = []
             local_rho = []
@@ -163,7 +163,7 @@ def main():
         # exit(0)
         print("==============================================================")
         for type in model_types:
-            print("Evaluating FedSTL on model", type)
+            print("Evaluating LogiCP on model", type)
             local_loss = []
             local_cons_loss = []
             local_rho = []

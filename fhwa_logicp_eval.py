@@ -83,8 +83,8 @@ def main():
     ############################
     # evaluation on fhwa dataset.
 
-    if args.mode == "eval" and args.method == 'FedSTL':
-        model_types = ["RNN"]
+    if args.mode == "eval" and args.method == 'LogiCP':
+        model_types = ["{}".format(args.models)]
 
         cp_dic = dic_loader(args)
 
@@ -93,7 +93,7 @@ def main():
 
         print("==============================================================")
         for type in model_types:
-            print("Evaluating FedSTL on model (client teacher)", type)
+            print("Evaluating LogiCP on model (client teacher)", type)
             local_loss = []
             local_cons_loss = []
             local_rho = []
@@ -106,7 +106,6 @@ def main():
                 model_path = f"hdd/saved_models/"
 
             for c in range(args.client):
-                # net_path = os.path.join(model_path, args.dataset+'_'+type+'_'+args.method+'_Client_'+str(c)+'_'+'{}'.format(args.client)+'_epoch_'+'{}.pt'.format(args.cp_epoch))
                 net_path = os.path.join(model_path, args.dataset+'_'+type+'_'+args.method+'_Client_'+str(c)+'_'+'{}'.format(args.client)+'_epoch_'+'{}.pt'.format(args.cp_epoch))
                 print(net_path)
                 model = get_eval_model(net_path, type)
@@ -120,24 +119,6 @@ def main():
                 print(loss, cons_loss, idx, rho_perc)
                 s_n += sr_pre
                 f_n += fr_pre
-            
-            # Sort and display client losses
-            sorted_losses = sort_client_losses(local_loss)
-            total_loss = []
-            index_list = []
-            print("Sorted client losses (index, loss):")
-            for idx, loss in sorted_losses:
-                print(f"Client {idx}: Loss = {loss:.4f}")
-                total_loss.append(loss)
-                index_list.append(idx)
-            
-            print(np.mean(total_loss[:70]))
-            print(np.mean(total_loss[:60]))
-            print(np.mean(total_loss[:80]))
-            print(np.mean(total_loss[:50]))
-            print(np.mean(total_loss[:100]))
-            print(index_list[:100])
-            print(len(index_list[:100]))
 
             print("Local loss:")
             std = np.std(local_loss)
@@ -160,12 +141,13 @@ def main():
             print("Error bar:", error)
             print()
 
+            print("CP Satisfaction Rate:")
             print(s_n / (s_n + f_n))
+            print()
 
-        # exit(0)
         print("==============================================================")
         for type in model_types:
-            print("Evaluating FedSTL on model", type)
+            print("Evaluating LogiCP on model", type)
             local_loss = []
             local_cons_loss = []
             local_rho = []

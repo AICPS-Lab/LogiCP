@@ -67,26 +67,16 @@ def main():
     print("Loaded client dataset.")
 
     if args.mode == "eval":
-        # print(1)
-        model_types = ["transformer"]
 
+        model_types = ["{}".format(args.model)]
         cp_dic = dic_loader(args)
-        # print(cp_dic)
 
         cluster_id = {int(group): clients_data["clients"] for group, clients_data in cp_dic.items()}
         client2cluster = {client: group for group, clients in cluster_id.items() for client in clients}
 
-        # print(cluster_id)
-
-        print()
-
-        # print(client2cluster)
-
-        # exit(0)
-
         print("==============================================================")
         for type in model_types:
-            print("Evaluating FedSTL on model", type)
+            print("Evaluating LogiCP on model", type)
             local_loss = []
             local_cons_loss = []
             local_rho = []
@@ -131,11 +121,8 @@ def main():
             print("Error bar:", error)
             print()
 
+            print("CP Satisfaction Rate for LogiCP-T:")
             print(s_case / (s_case + f_case))
-
-            print(f"\n")
-
-            print(sp / (sp + fp))
 
 
 if __name__ == '__main__':
