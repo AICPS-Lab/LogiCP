@@ -64,18 +64,6 @@ def main():
     args.device = get_device()
     
     client_dataset = {}
-
-    # for c in range(args.client): # 100
-    #     client_dataset[c] = {}
-    #     train_loader_private, trainset_shared, cal_loader_private, cal_shared, val_loader, test_loader, dataset_len = get_shared_dataset_1(c, args.dataset)
-        
-    #     client_dataset[c]["train_private"] = train_loader_private # private dataset loader
-    #     client_dataset[c]["train_shared"] = trainset_shared
-    #     client_dataset[c]["val"] = val_loader
-    #     client_dataset[c]["test"] = test_loader
-    #     client_dataset[c]["len"] = dataset_len
-    #     client_dataset[c]["cal"] = cal_loader_private
-    #     client_dataset[c]["calib_shared"] = cal_shared
     
     for c in range(args.client): # 100
         client_dataset[c] = {}
@@ -94,10 +82,9 @@ def main():
 
     ############################
     # evaluation on fhwa dataset.
-    # args.client = 100
 
     if args.mode == "eval" and args.method == 'FedSTL':
-        model_types = ["transformer"]
+        model_types = ["RNN"]
 
         cp_dic = dic_loader(args)
 
@@ -242,7 +229,7 @@ def main():
 
             print(sn / (sn + fn))
     
-    # exit(0)
+    exit(0)
     if args.mode == "eval" and args.method == 'IFCA':
 
 

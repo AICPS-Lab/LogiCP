@@ -1,19 +1,16 @@
 """
-The main file for evaluations.
+The evaluation file for LogiCP
 """
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-# Python version: 3.9
 
 import numpy as np
 import torch
 import torch.nn as nn
-from utils.update import LocalUpdate, LocalUpdateProp, compute_cluster_id_eval, cluster_id_property, cluster_explore, dic_loader, find_group_info
-from utils_training import get_device, to_device, save_model, get_client_dataset, get_shared_dataset, model_init, get_shared_dataset_1, get_shared_dataset_2
+from utils.update import LocalUpdate, LocalUpdateProp, compute_cluster_id_eval, cluster_id_property, dic_loader, find_group_info
+from utils_training import get_device, to_device, save_model, get_shared_dataset, model_init
 import os
 import copy
 from options import args_parser
-from network import ShallowRegressionLSTM, ShallowRegressionGRU, ShallowRegressionRNN, MultiRegressionLSTM, MultiRegressionGRU, MultiRegressionRNN
+from network import ShallowRegressionLSTM, ShallowRegressionGRU, ShallowRegressionRNN
 from transformer import TimeSeriesTransformer
 import random
 random.seed(0)
@@ -45,41 +42,18 @@ def get_dict_keys(cluster_id, idxs_users):
     return d
 
 def sort_client_losses(local_losses):
-    """
-    Sorts client evaluation losses and returns a list of tuples: (client_index, loss), sorted by loss ascending.
-    """
     sorted_losses = sorted(enumerate(local_losses), key=lambda x: x[1])
     return sorted_losses
-
-def new_loss_func(cp_value, y_gt, y_pred):
-
-    m = nn.ReLU()
-    temp = (y_pred - y_gt)
-    loss = m(0, m(temp, cp_value))
-
-    return loss
 
 def main():
     args = args_parser()
     args.device = get_device()
     
     client_dataset = {}
-
-    # for c in range(args.client): # 100
-    #     client_dataset[c] = {}
-    #     train_loader_private, trainset_shared, cal_loader_private, cal_shared, val_loader, test_loader, dataset_len = get_shared_dataset_1(c, args.dataset)
-        
-    #     client_dataset[c]["train_private"] = train_loader_private # private dataset loader
-    #     client_dataset[c]["train_shared"] = trainset_shared
-    #     client_dataset[c]["val"] = val_loader
-    #     client_dataset[c]["test"] = test_loader
-    #     client_dataset[c]["len"] = dataset_len
-    #     client_dataset[c]["cal"] = cal_loader_private
-    #     client_dataset[c]["calib_shared"] = cal_shared
     
-    for c in range(args.client): # 100
+    for c in range(args.client):
         client_dataset[c] = {}
-        train_loader_private, trainset_shared, calib_loader_private, pre_loader_private, nor_loader_private, val_loader, test_loader, dataset_len = get_shared_dataset_2(c, args.dataset)
+        train_loader_private, trainset_shared, calib_loader_private, pre_loader_private, nor_loader_private, val_loader, test_loader, dataset_len = get_shared_dataset(c, args.dataset)
         client_dataset[c]["train_private"] = train_loader_private # dataloader for the private training data
         client_dataset[c]["train_shared"] = trainset_shared # the shared data in training 
         client_dataset[c]["val"] = val_loader # dataloader for the validation data

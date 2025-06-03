@@ -74,48 +74,6 @@ def to_json():
                 with open(out_f, "w") as outfile:
                     json.dump(daily_vol, outfile, indent=2)
 
-
-
-# def save_as_dataset():
-#     """
-#     load monthly json files and combine for the whole year
-#     """
-#     for i,s in enumerate(states):
-#         # Get total stations 
-#         example = JSON_DIR+"january_2019/"+s+".json"
-#         f = open(example)
-#         data = json.load(f).keys()
-#         unique_station = [*set(data)]
-#         print("Total stations:", len(unique_station))
-        
-#         # Process one state for whole year
-#         curr_state = []
-#         for station in tqdm(unique_station):
-#             curr_station = []
-#             flag = True
-#             print("Processing station", station)
-#             if station[:-2] in state_to_station[s]:
-#                 for j,m in enumerate(months):
-#                     curr_file = JSON_DIR+m+"_2019/"+s+".json"
-#                     f = open(curr_file)
-#                     monthly_data = json.load(f)
-#                     try:
-#                         data = monthly_data[station]    # data for each station and month
-#                         station_month_ls = find_station_month(data, j)
-#                         curr_station.extend(station_month_ls)
-#                     except:
-#                         flag = False
-#                 if flag:
-#                     curr_state.append(curr_station)
-#                     print(len(curr_station))
-
-#         state_set = np.array(curr_state)
-#         print("Saved dataset shape:", state_set.shape)
-#         outfile = "hdd/traffic_data_2019/dataset/"+s
-#         np.save(outfile, state_set)
-
-
-
 def save_as_dataset():
     """
     load monthly json files and combine for the whole year
@@ -155,14 +113,12 @@ def save_as_dataset():
         np.save(outfile, state_set)
 
 
-
-
 def load_fed_dataset(dataset_path, client_id):
     """
     split preprocessed data in .npy files into features (x) and targets (y)
     """
     STA_PATH = 'hdd/traffic_data_2019/'
-    # read in station cluster and location 
+
     df = pd.read_csv(STA_PATH+"station_cluster.csv", index_col=0)
     df["unique-station"] = df["state"] + df["station"]
 
@@ -170,10 +126,7 @@ def load_fed_dataset(dataset_path, client_id):
 
     scaled = np.zeros_like(saved)
     scaler = preprocessing.StandardScaler()
-    scaled = scaler.fit_transform(saved.T[0]).T  # shape: 777, 8760
-    # selected_ind = 50   # select first 50 stations
-    # scaled = scaled[:selected_ind] # TODO: testing: using one row
-    # days = saved[:selected_ind, :, 1]
+    scaled = scaler.fit_transform(saved.T[0]).T 
     days = saved[:, :, 1]
     stations = saved[:, :, 2]
 
@@ -189,9 +142,9 @@ def load_fed_dataset(dataset_path, client_id):
 
     features = np.array(features)
     target = np.array(target)
-    print(features.shape, target.shape) # print feature and target shape
+    print(features.shape, target.shape) 
 
-    train, val = int(0.8*features.shape[0]), int(0.1*features.shape[0])    # split train/val/test = 0.8/0.1/0.1
+    train, val = int(0.8*features.shape[0]), int(0.1*features.shape[0]) 
     test = features.shape[0] - train - val  
 
     saving_dataset = {}
@@ -207,8 +160,6 @@ def load_fed_dataset(dataset_path, client_id):
         np.save(x_outfile, saving_dataset[fold+"_x"])
         y_outfile = "hdd/traffic_data_2019/torch_dataset/"+fold+"_"+str(client_id)+"_y" # add client ID to saved y data
         np.save(y_outfile, saving_dataset[fold+"_y"])
-
-
 
 
 def load_dataset(dataset_path):
@@ -255,7 +206,6 @@ def load_dataset(dataset_path):
         np.save(y_outfile, saving_dataset[fold+"_y"])
     
 
-
 def main():
     # step 1
     to_json()
@@ -267,8 +217,6 @@ def main():
         'hdd/traffic_data_2019/dataset/MA.npy',]
     for i, dataset_path in enumerate(data_path):
         load_fed_dataset(dataset_path, i+13)
-
-
 
 if __name__ == '__main__':
     try:

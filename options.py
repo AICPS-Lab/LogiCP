@@ -10,10 +10,10 @@ def args_parser():
 
     # main args
     parser.add_argument('--method', type=str, default="FedSTL", choices=["Ditto", "FedAvg", "FedRep", "IFCA", "FedProx", "FedSTL"])
-    parser.add_argument('--model', type=str, default="transformer", choices=["LSTM", "GRU", "RNN", "transformer"])
+    parser.add_argument('--model', type=str, default="RNN", choices=["LSTM", "GRU", "RNN", "transformer"])
     parser.add_argument('--epoch', type=int, default=10, help="# of training epoch")
-    parser.add_argument('--mode', type=str, default="eval", choices=['train', 'train-logic', 'eval', 'eval-sumo', 'pretrain_calib', 'train_cp', 'eval_visual'])
-    parser.add_argument('--dataset', type=str, default="ct", choices=['sumo', 'fhwa', 'ct'])
+    parser.add_argument('--mode', type=str, default="train_cp", choices=['train', 'train-logic', 'eval', 'eval-sumo', 'pretrain_calib', 'train_cp', 'eval_visual'])
+    parser.add_argument('--dataset', type=str, default="fhwa", choices=['sumo', 'fhwa', 'ct'])
     parser.add_argument('--client', type=int, default=100)
     parser.add_argument('--cluster', type=int, default=10)
     parser.add_argument('--frac', type=float, default=1, help="the fraction of clients: C")
@@ -36,8 +36,6 @@ def args_parser():
     parser.add_argument('--grad_clip', type=float, default=0.1, help="grad clip")
     parser.add_argument('--weight_decay', type=float, default=1e-4, help="weight decay")
     parser.add_argument('--pretrain_iter', type=int, default=10, help="number of training epoch in pretrain")
-
-    # RNN with lr 0.001, LSTM with lr 0.003
 
     args = parser.parse_args()
     return args

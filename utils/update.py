@@ -18,47 +18,29 @@ from find_trace import *
 from generate_STL import generate_property, generate_property_test, get_robustness_score
 
 
-
-
 def property_loss_simp(y_pred, property, loss_function):
     return torch.sum(loss_function(y_pred - property))
 
 
 def find_group_info(groups, index):
-    # Loop through each group in the dictionary
-    for group_id, group_info in groups.items():
-        # print(1)
-        # Check if the index is in the clients list of the current group
-        if index in group_info['clients']:
-            # If found, return the cp_value list of this group
-            return group_info['cp_value']
-    # If the index is not found in any group, return None or an appropriate message
 
-    print(f"ATTENTION: NO CORRESPONDING CP VALUE FOUND.")
+    for group_id, group_info in groups.items():
+        if index in group_info['clients']:
+            return group_info['cp_value']
+
+    print(f"CP value not found.")
     return None
 
 def cp_guarantee_ratio_calculation(y_batch, cp_value):
 
     length_batch = len(y_batch)
     att_length = len(y_batch[0])
-
-    assert att_length == 24
-
-    attribute_counts = [0] * 24  # List of 24 zeros
-
-    total_elements = len(y_batch)
-
     sat_rate = 0
     fail_rate = 0
 
     for i in range(length_batch):
         for j in range(att_length):
-            # print(y_batch[i])
-            # print(len(y_batch[i]))
-            # print(cp_value)
-            # print(len(cp_value))
-            # print(cp_value[j])
-            # exit(0)
+
             if np.abs(y_batch[i][j]) <= np.abs(cp_value[j]):
                 sat_rate += 1
             else:
@@ -69,17 +51,14 @@ def cp_guarantee_ratio_calculation(y_batch, cp_value):
     return sat_rate, fail_rate, cp_rate
 
 
-
 def dic_loader(args):
 
     if args.sep_type == "spec_m":
         if args.dataset == 'fhwa':
             cp_pat = f"hdd/cluster_cp_result_with_specm_{args.model}_{args.cp_epoch}_{args.client}/FedSTL_Cluster.json"
-
             print()
             print(f"the cp region is loaded from {cp_pat}")
             print()
-
             with open(cp_pat, 'r') as file:
                 cp_dic = json.load(file)
 
@@ -87,8 +66,9 @@ def dic_loader(args):
             cp_pat = f"ct/cluster_cp_result_with_specm_{args.model}_{args.cp_epoch}_{args.client}/FedSTL_Cluster.json"
             with open(cp_pat, 'r') as file:
                 cp_dic = json.load(file)
-            
+            print()
             print(f"cp region is loaded from {cp_pat}")
+            print()
 
     if args.sep_type == "value":
         if args.dataset == 'fhwa':
@@ -132,25 +112,7 @@ def dic_loader_without_specm(args):
 
 def new_loss_func(cp_value, y_gt, y_pred):
 
-    """
-    
-    If the point-wise loss is greater than its corresponding cp region, 
-    the loss will be calibrated to the size of cp region, 
-    since we assume the gt will appear in the cp region, 
-    so we don't want to gradient the model to predict outside of cp region. 
-    
-    """
-
-    # print(f"new loss function applied.")
-
-    att_len = len(cp_value)
-    assert att_len == y_gt.shape[1]
-
-    # temp = (y_pred - y_gt) ** 2
     temp = abs(y_pred - y_gt)
-    # print(f"the temp looks like {len(temp)}")
-    # print(f"the cp value looks like {cp_value}")
-
     loss = []
     data_loss = []
     
@@ -161,16 +123,26 @@ def new_loss_func(cp_value, y_gt, y_pred):
                 att_loss = cp_value[j]
             else:
                 att_loss = temp[i][j].item()
-            # att_loss = temp[i][j] - cp_value[j]
-            # relu_loss = m(att_loss)
             data_loss.append(att_loss)
         
         loss.append(data_loss)
 
-    # print(f"the new loss looks like {len(loss)}")
-    # print(f"the new loss looks like {len(loss[0])}")
-
     return loss
+
+
+def cp_loss(cp_value, y_gt, y_pred):
+
+    if isinstance(cp_value, list):
+        cp_value = torch.tensor(cp_value, dtype=y_pred.dtype, device=y_pred.device)
+    
+    # Match shape (broadcasting if needed)
+    if cp_value.dim() == 1:
+        cp_value = cp_value.unsqueeze(0).expand_as(y_pred)
+
+    error = torch.abs(y_pred - y_gt)
+    loss = torch.clamp(error - cp_value, min=0.0)
+
+    return loss.detach().cpu().tolist()
 
 def property_loss_eventually(y_pred, property, loss_function, type):
     iterval = 2
@@ -184,8 +156,6 @@ def property_loss_eventually(y_pred, property, loss_function, type):
         unsqueezed_diff = diff_yp.view(diff_yp.shape[0], int(diff_yp.shape[1]//iterval), iterval)
         diff_min, ind = torch.min(loss_function(unsqueezed_diff), dim=2)
         return torch.sum(diff_min)
-
-
 
 def property_loss(X, y_pred, property_by_station_day, loss_function, y, show):
     loss = torch.zeros(1).to('cuda')
@@ -203,8 +173,6 @@ def property_loss(X, y_pred, property_by_station_day, loss_function, y, show):
         plt.show()
     return loss
 
-
-
 def repackage_hidden(h):
 
     if isinstance(h, torch.Tensor):
@@ -212,126 +180,9 @@ def repackage_hidden(h):
     else:
         return tuple(repackage_hidden(v) for v in h)
 
-
-
-
-def transformer_prox_train(dataloader, net, args, loss_func, lr, server_model=None):
-    
-    net.train()
-    mu = 1
-
-    bias_p, weight_p = [], []
-    for name, p in net.named_parameters():
-        if 'bias' in name:
-            bias_p += [p]
-        else:
-            weight_p += [p]
-    
-    optimizer = torch.optim.SGD([{'params': weight_p, 'weight_decay':0.0001}, {'params': bias_p, 'weight_decay':0}], lr=lr, momentum=0.5)
-    local_eps = args.client_iter  # local update epochs
-    src_mask = generate_square_subsequent_mask(dim1=24, dim2=120)
-    tgt_mask = generate_square_subsequent_mask(dim1=24, dim2=24)
-
-    epoch_loss = []
-    for it in range(local_eps):
-        num_updates = 0
-        
-        for name, param in net.named_parameters():
-            param.requires_grad = True 
-        
-        batch_loss = []
-        for batch_idx, (X, y) in enumerate(dataloader): ## batch first=True
-            w_0 = copy.deepcopy(net.state_dict())
-            net.train()
-            optimizer.zero_grad()
-            X = X.unsqueeze(2)
-            output = net(src=X, tgt=X[:,-24:,:], src_mask=src_mask, tgt_mask=tgt_mask)
-            loss = loss_func(output.view(-1, 24), y)
-            loss.backward()
-            torch.nn.utils.clip_grad_norm_(net.parameters(), 0.5)
-            optimizer.step()
-
-            if it>0:
-                w_diff = torch.tensor(0., device=device)
-                for w, w_t in zip(server_model.parameters(), net.parameters()):
-                    w_diff += torch.pow(torch.norm(w - w_t), 2)
-                loss += mu / 2. * w_diff
-
-            num_updates += 1
-            batch_loss.append(loss.item())
-            
-            if num_updates == args.local_updates:
-                break
-
-        epoch_loss.append(sum(batch_loss)/len(batch_loss))
-    
-    return net, sum(epoch_loss)/len(epoch_loss)
-
-
-
-
-def transformer_ditto_train(dataloader, net, args, loss_func, lr, w_ditto=None, lam=1):
-    
-    net.train()
-
-    bias_p, weight_p = [], []
-    for name, p in net.named_parameters():
-        if 'bias' in name:
-            bias_p += [p]
-        else:
-            weight_p += [p]
-    
-    optimizer = torch.optim.SGD([{'params': weight_p, 'weight_decay':0.0001}, {'params': bias_p, 'weight_decay':0}], lr=lr, momentum=0.5)
-    local_eps = args.client_iter  # local update epochs
-    src_mask = generate_square_subsequent_mask(dim1=24, dim2=120)
-    tgt_mask = generate_square_subsequent_mask(dim1=24, dim2=24)
-
-    epoch_loss = []
-    for iter in range(local_eps):
-        num_updates = 0
-        
-        for name, param in net.named_parameters():
-            param.requires_grad = True 
-        
-        batch_loss = []
-        for batch_idx, (X, y) in enumerate(dataloader): ## batch first=True
-            w_0 = copy.deepcopy(net.state_dict())
-            net.train()
-            optimizer.zero_grad()
-            X = X.unsqueeze(2)
-            output = net(src=X, tgt=X[:,-24:,:], src_mask=src_mask, tgt_mask=tgt_mask)
-            loss = loss_func(output.view(-1, 24), y)
-            loss.backward()
-            torch.nn.utils.clip_grad_norm_(net.parameters(), 0.5)
-            optimizer.step()
-
-            if w_ditto is not None:
-                w_net = copy.deepcopy(net.state_dict())
-                for key in w_net.keys():
-                    w_net[key] = w_net[key] - lr*lam*(w_0[key]-w_ditto[key])
-                net.load_state_dict(w_net)
-                optimizer.zero_grad()
-
-            num_updates += 1
-            batch_loss.append(loss.item())
-            
-            if num_updates == args.local_updates:
-                break
-
-        epoch_loss.append(sum(batch_loss)/len(batch_loss))
-    
-    return net, sum(epoch_loss)/len(epoch_loss)
-
 def transformer_prop_pretrain(dataloader, net, args, loss_func, lr, w_glob_keys=None, cp_value=None):
 
-    # print()
-    # print(f"the pretrain function for TRANSFORMER is applied.")
-    # print()
-
-    # loss function will be changed to calculate the loss for each attribute in y. (24)
     loss_func = nn.MSELoss(reduction='mean')
-
-    # batch size of trainset loader is 64.
     net.batch_size = 64
 
     bias_p, weight_p = [], []
@@ -356,14 +207,11 @@ def transformer_prop_pretrain(dataloader, net, args, loss_func, lr, w_glob_keys=
         num_updates = 0
         batch_loss = []
 
-        for X, y in dataloader: ## batch first=True
+        for X, y in dataloader: 
             net.train()
             optimizer.zero_grad()
             X = X.unsqueeze(2).to('cuda')
             output = net(src=X, tgt=X[:,-24:,:], src_mask=src_mask, tgt_mask=tgt_mask)
-            # print(output.shape)
-
-            # print(output.view(-1, 24).shape) # [64, 24]
             loss = loss_func(output.view(-1, 24), y)
             loss.backward()
             torch.nn.utils.clip_grad_norm_(net.parameters(), 0.5)
@@ -380,39 +228,24 @@ def transformer_prop_pretrain(dataloader, net, args, loss_func, lr, w_glob_keys=
     return net, sum(epoch_loss)/len(epoch_loss)
 
 def transformer_prop_calib_norm(dataloader, net, args, loss_func, lr, w_glob_keys=None, cp_value=None):
-
-    # print()
-    # print(f"the normalization calibration function for TRANSFORMER is applied.")
-    # print()
     
     src_mask = generate_square_subsequent_mask(dim1=24, dim2=120).to('cuda')
     tgt_mask = generate_square_subsequent_mask(dim1=24, dim2=24).to('cuda')
 
     net.eval()
 
-    for X, y in dataloader: ## batch first=True
+    for X, y in dataloader:
         X = X.unsqueeze(2).to('cuda')
         output = net(src=X, tgt=X[:,-24:,:], src_mask=src_mask, tgt_mask=tgt_mask)
-        # print(output.shape)
-
-        # print(output.view(-1, 24).shape) # [64, 24]
-        abs_diff = abs(output.view(-1, 24) - y) # find the distance between pred and gt
-        # print(abs_diff.shape)
-
-        # exit(0)
-        result_list = abs_diff.tolist() # result in a list with 24 elements, each element is a list with 64 differences. 
+        abs_diff = abs(output.view(-1, 24) - y) 
+        result_list = abs_diff.tolist() 
         max_values = np.max(result_list, axis=0)
 
     return max_values
 
 def transformer_prop_calib(dataloader, net, args, loss_func, lr, w_glob_keys=None, max_values = None):
 
-    # print()
-    # print(f"the CALIBRATION function for TRANSFORMER is applied.")
-    # print()
-
     max_values = np.array(max_values, dtype=np.float32) 
-    # print(f"max_values check is {max_values}")
 
     src_mask = generate_square_subsequent_mask(dim1=24, dim2=120).to('cuda')
     tgt_mask = generate_square_subsequent_mask(dim1=24, dim2=24).to('cuda')
@@ -421,20 +254,9 @@ def transformer_prop_calib(dataloader, net, args, loss_func, lr, w_glob_keys=Non
     for X, y in dataloader:
         X = X.unsqueeze(2).to('cuda')
         output = net(src=X, tgt=X[:,-24:,:], src_mask=src_mask, tgt_mask=tgt_mask)
-        # print(output)
-        # print(output.shape)
 
-        abs_diff = abs(output.view(-1, 24) - y).cpu().detach().numpy() # find the distance between pred and gt
-        # print(max_values)
-        # print(abs_diff.shape)
-        # print(abs_diff[:2])
-        # print(len(abs_diff))
+        abs_diff = abs(output.view(-1, 24) - y).cpu().detach().numpy() 
         abs_diff = np.array(abs_diff, dtype=np.float32)
-        # print(abs_diff[:2])  
-        # print(len(abs_diff[0]))
-        # print(len(abs_diff))
-        # exit(0)
-        # print(f'unnormalied diff is {abs_diff}')
 
         for i in range(len(abs_diff)):
             abs_diff[i] /= max_values
@@ -444,14 +266,11 @@ def transformer_prop_calib(dataloader, net, args, loss_func, lr, w_glob_keys=Non
         
     return c_tuda_list
 
-
 def transformer_prop_train(dataloader, net, args, loss_func, lr, w_glob_keys=None, cp_value=None):
 
-    # loss function will be changed to calculate the loss for each attribute in y. (24)
     loss_func_cp = new_loss_func
     loss_func = nn.MSELoss(reduction='mean')
 
-    # batch size of trainset loader is 64
     net.batch_size = 64
 
     bias_p, weight_p = [], []
@@ -477,13 +296,11 @@ def transformer_prop_train(dataloader, net, args, loss_func, lr, w_glob_keys=Non
         
         batch_loss = []
         batch_cons_loss = []
-        for X, y in dataloader: ## batch first=True
+        for X, y in dataloader:
             net.train()
             optimizer.zero_grad()
             X = X.unsqueeze(2).to('cuda')
             output = net(src=X, tgt=X[:,-24:,:], src_mask=src_mask, tgt_mask=tgt_mask)
-            # print(output.shape)
-            # print(output.view(-1, 24).shape) # [64, 24]
             pred_loss = loss_func(output.view(-1, 24), y)
             pred_loss_cp = loss_func_cp(cp_value = cp_value, y_pred = output.view(-1, 24), y_gt = y)
 
@@ -607,7 +424,6 @@ def transformer_prop_cp_teacher(dataloader, net, args, loss_func, rho=False, cp_
         return net.state_dict(), sum(batch_loss) / len(batch_loss), sum(batch_cons_loss) / len(batch_cons_loss)
 
 
-
 def transformer_prop_test(dataloader, net, args, loss_func, rho=False):
     net.eval()
     m = nn.ReLU()
@@ -624,8 +440,6 @@ def transformer_prop_test(dataloader, net, args, loss_func, rho=False):
     for X, y in dataloader:
         net.eval()
         X = X.unsqueeze(2).to('cuda')
-        # print(f"X looks like {X}")
-        # exit(0)
         output = net(src=X, tgt=X[:,-24:,:], src_mask=src_mask, tgt_mask=tgt_mask)
         
         if args.property_type == 'constraint':
@@ -641,7 +455,7 @@ def transformer_prop_test(dataloader, net, args, loss_func, rho=False):
         else:
             raise NotImplementedError
         
-        pred_loss = loss_func(output.view(-1, 24), y) # TODO: add cp quantified uncertainty here
+        pred_loss = loss_func(output.view(-1, 24), y)
         batch_loss.append(pred_loss.item())
         batch_cons_loss.append(cons_loss.item())
 
@@ -718,8 +532,6 @@ def transformer_prop_cp_rate(dataloader, net, args, loss_func, rho=False, cp_val
         return sum(batch_loss) / len(batch_loss), sum(batch_cons_loss) / len(batch_cons_loss), sum(batch_rho) / len(batch_rho), s_r, f_r, cp_r
     else:
         return net, sum(batch_loss) / len(batch_loss), sum(batch_cons_loss) / len(batch_cons_loss)
-
-
 
 
 def transformer_train(dataloader, net, args, loss_func, lr, w_glob_keys=None, cp_value=None):
@@ -806,226 +618,12 @@ def transformer_test(dataloader, net, args, loss_func):
     return net, sum(epoch_loss)/len(epoch_loss)
 
 
-
-class LocalUpdateProx(object):
-    def __init__(self, args, dataset=None, idxs=None):
-        self.args = args
-        self.loss_func = nn.MSELoss()
-        self.ldr_train = dataset["train_private"]
-        self.ldr_val = dataset["val"]
-        self.ldr_test = dataset["test"]
-        self.ldr_cal = dataset["cal"]
-        self.idxs = idxs  # client index
-
-    def train(self, net, w_glob_keys, last=False, dataset_test=None, ind=-1, idx=-1, lr=0.001, mu=0.1, server_model=None):
-        
-        if net.model_type == 'transformer':
-            net, avg_ep_loss = transformer_prox_train(self.ldr_train, net, self.args, self.loss_func, self.args.max_lr, server_model)
-            return net.state_dict(), avg_ep_loss, self.idxs
-        
-        else:
-            bias_p, weight_p = [], []
-            for name, p in net.named_parameters():
-                if 'bias' in name:
-                    bias_p += [p]
-                else:
-                    weight_p += [p]
-            
-            optimizer = torch.optim.SGD([
-                {'params': weight_p, 'weight_decay':0.0001}, 
-                {'params': bias_p, 'weight_decay':0}], lr=lr, momentum=0.5)
-            
-            local_eps = self.args.client_iter  # local update epochs
-            epoch_loss = []
-            hidden_1, hidden_2 = net.init_hidden(), net.init_hidden()
-
-            for name, param in net.named_parameters():
-                param.requires_grad = True
-            
-            for it in range(local_eps):   # for # total local ep
-                num_updates = 0
-                batch_loss = []
-
-                for batch_idx, (X, y) in enumerate(self.ldr_train):
-                    net.train()
-                    optimizer.zero_grad()
-                    hidden_1 = repackage_hidden(hidden_1)
-                    hidden_2 = repackage_hidden(hidden_2)
-                    output, hidden_1, hidden_2 = net(X, hidden_1, hidden_2)
-                    loss = self.loss_func(output, y)
-
-                    if it>0:
-                        w_diff = torch.tensor(0., device=device)
-                        for w, w_t in zip(server_model.parameters(), net.parameters()):
-                            w_diff += torch.pow(torch.norm(w - w_t), 2)
-                        loss += mu / 2. * w_diff
-
-                    loss.backward()
-                    optimizer.step()
-                    num_updates += 1
-                    batch_loss.append(loss.item())
-                    if num_updates == self.args.local_updates:
-                        break
-
-                epoch_loss.append(sum(batch_loss)/len(batch_loss))
-            return net.state_dict(), sum(epoch_loss)/len(epoch_loss), self.idxs
-    
-    
-    def test(self, net, w_glob_keys, dataset_test=None, ind=-1, idx=-1):
-        
-        if net.model_type == 'transformer':
-            net, avg_ep_loss = transformer_test(self.ldr_train, net, self.args, self.loss_func)
-            return net.state_dict(), avg_ep_loss, self.idxs
-        
-        else:
-            net.eval()
-            epoch_loss = []
-            num_updates = 0
-            
-            hidden_1, hidden_2 = net.init_hidden(), net.init_hidden()
-
-            for name, param in net.named_parameters():
-                param.requires_grad = False 
-
-            batch_loss = []
-            batch_y_test = []
-            batch_pred_test = []
-            for X, y in self.ldr_train:
-                hidden_1 = repackage_hidden(hidden_1)
-                hidden_2 = repackage_hidden(hidden_2)
-                output, hidden_1, hidden_2 = net(X, hidden_1, hidden_2)
-                loss = self.loss_func(output, y)
-
-                batch_y_test.append(y.detach().cpu().numpy())
-                batch_pred_test.append(output.detach().cpu().numpy())
-                
-                net.zero_grad()
-                num_updates += 1
-                batch_loss.append(loss.item())
-                epoch_loss.append(sum(batch_loss)/len(batch_loss))
-            return net.state_dict(), sum(epoch_loss)/len(epoch_loss), self.idxs
-
-
-
-class LocalUpdateDitto(object):
-    def __init__(self, args, dataset=None, idxs=None):
-        self.args = args
-        self.loss_func = nn.MSELoss()
-        self.ldr_train = dataset["train_private"]
-        self.ldr_val = dataset["val"]
-        self.ldr_test = dataset["test"]
-        self.idxs = idxs  # client index
-
-    def train(self, net, w_glob_keys, last=False, dataset_test=None, ind=-1, idx=-1, lr=0.001, w_ditto=None, lam=1):
-        
-        if net.model_type == 'transformer':
-            net, avg_ep_loss = transformer_ditto_train(self.ldr_train, net, self.args, self.loss_func, self.args.max_lr, w_ditto=w_ditto, lam=lam)
-            return net.state_dict(), avg_ep_loss, self.idxs
-        
-        else:
-            net.train()
-            bias_p, weight_p = [], []
-            for name, p in net.named_parameters():
-                if 'bias' in name:
-                    bias_p += [p]
-                else:
-                    weight_p += [p]
-            
-            optimizer = torch.optim.SGD([
-                {'params': weight_p, 'weight_decay':0.0001}, 
-                {'params': bias_p, 'weight_decay':0}], lr=lr, momentum=0.5)
-            
-            local_eps = self.args.client_iter  # local update epochs
-            epoch_loss = []
-            hidden_1, hidden_2 = net.init_hidden(), net.init_hidden()
-
-            for name, param in net.named_parameters():
-                param.requires_grad = True
-            
-            for iter in range(local_eps):   # for # total local ep
-                num_updates = 0
-                batch_loss = []
-
-                for batch_idx, (X, y) in enumerate(self.ldr_train):
-                    w_0 = copy.deepcopy(net.state_dict())
-                    net.train()
-                    net.zero_grad()
-                    hidden_1 = repackage_hidden(hidden_1)
-                    hidden_2 = repackage_hidden(hidden_2)
-                    output, hidden_1, hidden_2 = net(X, hidden_1, hidden_2)
-                    loss = self.loss_func(output, y)
-                    loss.backward()
-                    optimizer.step()
-
-                    if w_ditto is not None:
-                        w_net = copy.deepcopy(net.state_dict())
-                        for key in w_net.keys():
-                            w_net[key] = w_net[key] - lr*lam*(w_0[key]-w_ditto[key])
-                        net.load_state_dict(w_net)
-                        optimizer.zero_grad()
-
-                    num_updates += 1
-                    batch_loss.append(loss.item())
-                    if num_updates == self.args.local_updates:
-                        break
-
-                epoch_loss.append(sum(batch_loss)/len(batch_loss))
-
-            return net.state_dict(), sum(epoch_loss)/len(epoch_loss), self.idxs
-        
-
-    def test(self, net, w_glob_keys, dataset_test=None, ind=-1, idx=-1):
-
-        if net.model_type == 'transformer':
-            net, avg_ep_loss = transformer_test(self.ldr_train, net, self.args, self.loss_func)
-            return net.state_dict(), avg_ep_loss, self.idxs
-        
-        else:
-            net.eval()
-            epoch_loss = []
-            num_updates = 0
-            hidden_1, hidden_2 = net.init_hidden(), net.init_hidden()
-
-            for name, param in net.named_parameters():
-                param.requires_grad = False 
-
-            batch_loss = []
-            batch_y_test = []
-            batch_pred_test = []
-            for X, y in self.ldr_train:
-                hidden_1 = repackage_hidden(hidden_1)
-                hidden_2 = repackage_hidden(hidden_2)
-                output, hidden_1, hidden_2 = net(X, hidden_1, hidden_2)
-                loss = self.loss_func(output, y)
-
-                batch_y_test.append(y.detach().cpu().numpy())
-                batch_pred_test.append(output.detach().cpu().numpy())
-                
-                net.zero_grad()
-                num_updates += 1
-                batch_loss.append(loss.item())
-
-                epoch_loss.append(sum(batch_loss)/len(batch_loss))
-            return net.state_dict(), sum(epoch_loss)/len(epoch_loss), self.idxs
-
-
 def cluster_explore_without_sp(net, w_glob_keys, lr, args, dataloaders, cp_value):
 
-    # loss function will be changed to calculate the loss for each attribute in y. (24)
     loss_func_cp = new_loss_func
     loss_func = nn.MSELoss(reduction='mean')
 
-    # batch size of trainset loader is 64.
     net.batch_size = 64
-
-    # calibration result should be loaded here.
-    # cp_path = "hdd/saved_cp_result/"
-    # cp_dir = os.path.join(cp_path, "{}.json".format(args.method))
-
-    # with open(cp_dir, 'r') as file:
-    #     cp_file = json.load(file)
-        
-    # cp_value = cp_file['cp_value']
 
     if net.model_type == 'transformer':
         net, avg_ep_loss = transformer_prop_train(dataloaders, net, args, loss_func, lr, w_glob_keys=w_glob_keys)
@@ -1073,33 +671,17 @@ def cluster_explore_without_sp(net, w_glob_keys, lr, args, dataloaders, cp_value
 
                 num_updates += 1
                 batch_loss.append(loss.item())
-                # batch_cons_loss.append(batch_loss)
-                
-                # if num_updates == args.local_updates_cp: break
                 
             epoch_loss.append(sum(batch_loss)/len(batch_loss))
-            # epoch_cons_loss.append(sum(batch_cons_loss)/len(batch_cons_loss))
     
     return net.state_dict(), sum(epoch_loss)/len(epoch_loss)
 
-# local updates for FedRep, FedAvg
 class LocalUpdate(object):
-    """
-    Federated learning updating class for a single agent.
-    """
-    # def __init__(self, args, dataset=None, idxs=None):
-    #     self.args = args
-    #     self.loss_func = nn.MSELoss()
-    #     self.ldr_train = dataset["train_private"] # the train private dataset loader
-    #     self.ldr_val = dataset["val"]
-    #     self.ldr_test = dataset["test"]
-    #     self.ldr_cal = dataset["cal"]
-    #     self.idxs = idxs
 
     def __init__(self, args, dataset=None, idxs=None, loss_func=None):
         self.args = args
         self.loss_func = nn.MSELoss(reduction='mean')
-        self.ldr_train = dataset["train_private"] # the train private dataset loader
+        self.ldr_train = dataset["train_private"]
         self.ldr_val = dataset["val"]
         self.ldr_test = dataset["test"]
         self.ldr_cal = dataset["cal"]
@@ -1113,7 +695,6 @@ class LocalUpdate(object):
         # pretrain should take MSE to calculate the loss.
         self.loss_func = nn.MSELoss(reduction='mean')
 
-        # batch size of trainset loader is 64. 
         net.batch_size = 64
 
         if net.model_type == 'transformer':
@@ -1143,15 +724,11 @@ class LocalUpdate(object):
                 batch_loss = []
 
                 for batch_idx, (X, y) in enumerate(self.ldr_pre):
-                    w_0 = copy.deepcopy(net.state_dict()) # used in ditto
                     net.train()
                     net.zero_grad()
                     hidden_1 = repackage_hidden(hidden_1)
                     hidden_2 = repackage_hidden(hidden_2)
                     output, hidden_1, hidden_2 = net(X, hidden_1, hidden_2)
-
-                    # print(f"pretrain output shape check expect (64, 24) is {output.shape}")
-                    assert output.shape == y.shape
 
                     loss = self.loss_func(output, y)
                     loss.backward()
@@ -1165,7 +742,6 @@ class LocalUpdate(object):
                 
                 epoch_loss.append(sum(batch_loss)/len(batch_loss))
         
-        # return updated net, average epoch loss, the current index
         return net.state_dict(), sum(epoch_loss)/len(epoch_loss), self.idxs
     
     def calib_norm(self, net, w_glob_keys, last=False, dataset_test=None, ind=-1, idx=-1, lr=0.001):
@@ -1178,7 +754,6 @@ class LocalUpdate(object):
         
         else:
             net.eval() # the model will not update in calibration
-            cal_loss = []
 
             hidden_1, hidden_2 = net.init_hidden(), net.init_hidden()
 
@@ -1187,31 +762,15 @@ class LocalUpdate(object):
                 hidden_2 = repackage_hidden(hidden_2)
                 output, hidden_1, hidden_2 = net(X, hidden_1, hidden_2)
 
-                # print(f"calib output shape check expect (64, 24) is {output.shape}")
-                assert output.shape == y.shape
-
-                # TODO: write a function to get calibration loss
-                abs_diff = abs(output - y) # find the distance between pred and gt
-                # print(abs_diff.shape)
-                # abs_diff_t = abs_diff.t() # take transpose, because there are 24 attributes in the y.
-                # print(abs_diff_t.shape)
-                # exit(0)
-                result_list = abs_diff.tolist() # result in a list with 24 elements, each element is a list with 64 differences. 
+                abs_diff = abs(output - y) 
+                result_list = abs_diff.tolist() 
 
                 max_values = np.max(result_list, axis=0)
 
-                # print(max_values)
-                # print(max_values.shape)
-
-            # print(f'cp_result list is {result_list}')
             return max_values
         
     def calib(self, net, w_glob_keys, last=False, dataset_test=None, ind=-1, idx=-1, lr=0.001, max_values = None):
 
-        # loss function will be changed to calculate the loss for each attribute in y. (24)
-        # self.loss_func = nn.MSELoss(reduction='mean')
-
-        # batch size of calibset loader is 64.
         net.batch_size = 90
         cal_loss = []
 
@@ -1702,11 +1261,6 @@ class LocalUpdate(object):
 def compute_cluster_id(cluster_models, client_dataset, args, idxs_users):
     cluster_loss = np.full((args.cluster, args.client), np.inf)
 
-    # print(f'index id in function is {idxs_users}')
-
-    # exit(0)
-    
-    # load cluster models 
     for cluster in range(args.cluster):
         for c in idxs_users:
             local = LocalUpdate(args=args, dataset=client_dataset[c], idxs=c)
@@ -1760,7 +1314,7 @@ def compute_cluster_id_eval(cluster_models, client_dataset, args, idxs_users):
 
 
 def cluster_id_property(cluster_models, client_dataset, args, idxs_users):
-    cluster_loss = np.full((args.cluster, args.client), np.inf) # 5 * 100 with inf
+    cluster_loss = np.full((args.cluster, args.client), np.inf) 
 
     for cluster in range(args.cluster):
         for c in idxs_users:
@@ -1786,23 +1340,12 @@ def cluster_id_property(cluster_models, client_dataset, args, idxs_users):
 
 
 
-def cluster_explore(net, w_glob_keys, lr, args, dataloaders, cp_value):
+def cluster_explore(net, w_glob_keys, lr, args, dataloaders, cp_value, loss_func = cp_loss):
 
-    # loss function will be changed to calculate the loss for each attribute in y. (24)
-    loss_func_cp = new_loss_func
+    loss_func_cp = loss_func
     loss_func = nn.MSELoss(reduction='mean')
 
-    # batch size of trainset loader is 64.
     net.batch_size = 64
-
-    # calibration result should be loaded here.
-    # cp_path = "hdd/saved_cp_result/"
-    # cp_dir = os.path.join(cp_path, "{}.json".format(args.method))
-
-    # with open(cp_dir, 'r') as file:
-    #     cp_file = json.load(file)
-        
-    # cp_value = cp_file['cp_value']
 
     if net.model_type == 'transformer':
         net, avg_ep_loss = transformer_prop_train(dataloaders, net, args, loss_func, lr, w_glob_keys=w_glob_keys, cp_value=cp_value)
@@ -1821,7 +1364,6 @@ def cluster_explore(net, w_glob_keys, lr, args, dataloaders, cp_value):
                                     {'params': bias_p, 'weight_decay':0}], 
                                     lr=lr, momentum=0.5)
         epoch_loss = []
-        epoch_cons_loss = []
         hidden_1, hidden_2 = net.init_hidden(), net.init_hidden()
         for name, param in net.named_parameters():
             if name in w_glob_keys:
@@ -1832,7 +1374,6 @@ def cluster_explore(net, w_glob_keys, lr, args, dataloaders, cp_value):
         for iter in range(args.cluster_fine_tune_iter):
             num_updates = 0
             batch_loss = []
-            batch_cons_loss = []
             for batch_idx, (X, y) in enumerate(dataloaders):
                 net.train()
                 optimizer.zero_grad()
@@ -1877,21 +1418,13 @@ def cluster_explore(net, w_glob_keys, lr, args, dataloaders, cp_value):
 
 class LocalUpdateProp(object):
     """
-    Federated learning updating class for a single agent with property mining.
+    federated learning updating class with specification mining.
     """
-    # def __init__(self, args, dataset=None, idxs=None):
-    #     self.args = args
-    #     self.loss_func = nn.MSELoss(reduction='mean')
-    #     self.m = nn.ReLU()
-    #     self.ldr_train = dataset["train_private"]
-    #     self.ldr_val = dataset["val"]
-    #     self.ldr_test = dataset["test"]
-    #     self.idxs = idxs
 
     def __init__(self, args, dataset=None, idxs=None, loss_func=None):
         self.args = args
         self.loss_func = nn.MSELoss(reduction='mean')
-        self.ldr_train = dataset["train_private"] # the train private dataset loader
+        self.ldr_train = dataset["train_private"] 
         self.ldr_val = dataset["val"]
         self.ldr_test = dataset["test"]
         self.ldr_cal = dataset["cal"]
@@ -1912,11 +1445,6 @@ class LocalUpdateProp(object):
             return net.state_dict(), avg_ep_loss, self.idxs
         
         else:
-
-            # print()
-            # print(f"the pretrain function for OTHER is applied.")
-            # print()
-
             bias_p, weight_p = [], []
             for name, p in net.named_parameters():
                 if 'bias' in name: 
@@ -1964,132 +1492,71 @@ class LocalUpdateProp(object):
         # return updated net, average epoch loss, the current index
         return net.state_dict(), sum(epoch_loss)/len(epoch_loss), self.idxs
     
-    def calib_norm(self, net, w_glob_keys, last=False, dataset_test=None, ind=-1, idx=-1, lr=0.001):
-
+    def calib_norm(self, net, w_glob_keys=None, last=False, dataset_test=None, ind=-1, idx=-1, lr=0.001):
+        """
+        Compute alpha in distributed CP with normalization
+        """
         net.batch_size = 50
 
         if net.model_type == 'transformer':
-            max_values = transformer_prop_calib_norm(self.ldr_nor, net, self.args, self.loss_func, self.args.max_lr, w_glob_keys=w_glob_keys)
-            return max_values
-        
-        else:
-            net.eval() # the model will not update in calibration
-            cal_loss = []
+            return transformer_prop_calib_norm(
+                self.ldr_nor, net, self.args, self.loss_func, self.args.max_lr, w_glob_keys=w_glob_keys
+            )
 
-            hidden_1, hidden_2 = net.init_hidden(), net.init_hidden()
+        net.eval()
+        hidden_1, hidden_2 = net.init_hidden(), net.init_hidden()
+        all_diffs = []
 
-            for X, y in self.ldr_nor:
-                hidden_1 = repackage_hidden(hidden_1)
-                hidden_2 = repackage_hidden(hidden_2)
-                output, hidden_1, hidden_2 = net(X, hidden_1, hidden_2)
+        for X, y in self.ldr_nor:
+            hidden_1 = repackage_hidden(hidden_1)
+            hidden_2 = repackage_hidden(hidden_2)
+            output, hidden_1, hidden_2 = net(X, hidden_1, hidden_2)
+            abs_diff = abs(output - y)
+            all_diffs.extend(abs_diff.tolist())
 
-                # print(f"calib output shape check expect (64, 24) is {output.shape}")
-                assert output.shape == y.shape
+        all_diffs = np.array(all_diffs)
+        max_values = np.max(all_diffs, axis=0)
+        return max_values
 
-                # TODO: write a function to get calibration loss
-                abs_diff = abs(output - y) # find the distance between pred and gt
-                # print(abs_diff.shape)
-                # abs_diff_t = abs_diff.t() # take transpose, because there are 24 attributes in the y.
-                # print(abs_diff_t.shape)
-                # exit(0)
-                result_list = abs_diff.tolist() # result in a list with 24 elements, each element is a list with 64 differences. 
-
-                max_values = np.max(result_list, axis=0)
-
-                # print(max_values)
-                # print(max_values.shape)
-
-            # print(f'cp_result list is {result_list}')
-            return max_values
-
-
-    def calib(self, net, w_glob_keys, last=False, dataset_test=None, ind=-1, idx=-1, lr=0.001, max_values = None):
-
-        # loss function will be changed to calculate the loss for each attribute in y. (24)
-        # self.loss_func = nn.MSELoss(reduction='mean')
-
-        # batch size of calibset loader is 64.
+    def calib(self, net, w_glob_keys=None, last=False, dataset_test=None, ind=-1, idx=-1, lr=0.001, max_values=None):
+        """
+        Compute normalized conformity scores (c_tuda) for calibration.
+        """
         net.batch_size = 90
-        cal_loss = []
 
         if net.model_type == 'transformer':
-            c_tuda_list = transformer_prop_calib(self.ldr_cal, net, self.args, self.loss_func, self.args.max_lr, w_glob_keys=w_glob_keys, max_values=max_values)
-            return c_tuda_list
-        
-        else:
-            net.eval() # the model will not update in calibration
+            return transformer_prop_calib(
+                self.ldr_cal, net, self.args, self.loss_func, self.args.max_lr,
+                w_glob_keys=w_glob_keys, max_values=max_values
+            )
 
-            hidden_1, hidden_2 = net.init_hidden(), net.init_hidden()
+        net.eval()
+        hidden_1, hidden_2 = net.init_hidden(), net.init_hidden()
+        c_tuda_list = []
+        cal_loss = []
 
-            for X, y in self.ldr_cal:
-                hidden_1 = repackage_hidden(hidden_1)
-                hidden_2 = repackage_hidden(hidden_2)
-                output, hidden_1, hidden_2 = net(X, hidden_1, hidden_2)
+        for X, y in self.ldr_cal:
+            hidden_1 = repackage_hidden(hidden_1)
+            hidden_2 = repackage_hidden(hidden_2)
+            output, hidden_1, hidden_2 = net(X, hidden_1, hidden_2)
 
-                # print(f"calib output shape check expect (64, 24) is {output.shape}")
-                assert output.shape == y.shape
+            abs_diff = abs(output - y).cpu().detach().numpy().astype(np.float32)
+            abs_diff /= max_values  
 
-                # TODO: write a function to get calibration loss
-                abs_diff = abs(output - y).cpu().detach().numpy() # find the distance between pred and gt
-                # print(max_values)
-                # print(abs_diff.shape)
-                # print(abs_diff[:2])
-                # print(len(abs_diff))
-                abs_diff = np.array(abs_diff, dtype=np.float32)
-                # print(abs_diff[:2])  
-                # print(len(abs_diff[0]))
-                # print(len(abs_diff))
-                # exit(0)
-                # print(f'unnormalied diff is {abs_diff}')
-                max_values = np.array(max_values, dtype=np.float32) 
+            max_value_of_row = np.max(abs_diff, axis=1)
+            c_tuda_list.extend(max_value_of_row.tolist())
 
-                for i in range(len(abs_diff)):
-                    abs_diff[i] /= max_values
-                
-                assert abs_diff.shape == (90, 24)
-                # print(abs_diff.shape)
-                # print(abs_diff)
-                # exit(0)
-                max_value_of_row = np.max(abs_diff, axis=1)# take transpose, because there are 24 attributes in the y.
-                assert max_value_of_row.shape == (90, )
-                # print(max_value_of_row.shape)
-                # print(max_value_of_row)
-                # exit(0)
-                # result_list = abs_diff_t.tolist() # result in a list with 24 elements, each element is a list with 64 differences. 
-                c_tuda_list = max_value_of_row
+            loss = self.loss_func(output, y)
+            cal_loss.append(loss.item())
 
-                loss = self.loss_func(output, y)
-                cal_loss.append(loss.item())
+        return c_tuda_list
 
-                # exit(0)
+    def train(self, net, w_glob_keys, last=False, dataset_test=None, loss_func = None, ind=-1, idx=-1, lr=0.001, cp_value=None):
 
-            # print(f'cp_result list is {result_list}')
-            return c_tuda_list
-
-
-    def train(self, net, w_glob_keys, last=False, dataset_test=None, ind=-1, idx=-1, lr=0.001, cp_value=None):
-
-        # loss function will be changed to calculate the loss for each attribute in y. (24)
-        self.loss_func_cp = new_loss_func
+        self.loss_func_cp = loss_func
         self.loss_func = nn.MSELoss(reduction='mean')
-
-        # batch size of trainset loader is 64.
         net.batch_size = 64
-
-        # calibration result should be loaded here.
-        # cp_path = "hdd/saved_cp_result/"
-        # cp_dir = os.path.join(cp_path, "{}.json".format(self.args.method))
-
-        # with open(cp_dir, 'r') as file:
-        #     cp_file = json.load(file)
-
-        # cp_dic = dic_loader(self.args)
-        # cp_value = find_group_info(cp_dic, idx)
         cp_value = cp_value
-        
-        # print(f"CP value is loaded.")
-        # print(f"cp value looks like {cp_value}")
-
         if net.model_type == 'transformer':
             net, avg_ep_loss = transformer_prop_train(self.ldr_train, net, self.args, self.loss_func, lr, w_glob_keys=w_glob_keys, cp_value=cp_value)
             return net.state_dict(), avg_ep_loss, self.idxs
@@ -2126,16 +1593,9 @@ class LocalUpdateProp(object):
                     output, hidden_1, hidden_2 = net(X, hidden_1, hidden_2)
                     pred_loss = self.loss_func(output, y)
 
-                    # print(f"train output shape check expect (64, 24) is {output.shape}")
-                    # print(f"train output shape check expect (64, 24) is {y.shape}")
-                    assert output.shape == y.shape
-
                     pred_loss_cp = self.loss_func_cp(cp_value = cp_value, y_pred = output, y_gt = y)
                     subloss = [loss for sublist in pred_loss_cp for loss in sublist]
                     cp_loss = np.mean([loss**2 for loss in subloss])
-
-                    # print(f"after cp loss shape check expect (64, 24) is {pred_loss}")
-                    # print("==============================================================")
 
                     if self.args.property_type == 'constraint':
                         property_upper, stl_lib_upper = generate_property_test(X, property_type = "upper")
@@ -2143,21 +1603,9 @@ class LocalUpdateProp(object):
                         property_lower, stl_lib_lower = generate_property_test(X, property_type = "lower")
                         corrected_trace_lower = convert_best_trace(stl_lib_lower, output)
                         cons_loss = self.loss_func(output, corrected_trace_upper) + self.loss_func(output, corrected_trace_lower)
-                    elif self.args.property_type == 'eventually':
-                        property_upper, _ = generate_property_test(X, property_type = "eventually-upper")
-                        property_lower, _ = generate_property_test(X, property_type = "eventually-lower")
-                        cons_loss = property_loss_eventually(output, property_upper, self.m, "eventually-upper") + property_loss_eventually(output, property_lower, self.m, "eventually-lower")
-
                     else:
                         raise NotImplementedError
-                    
-                    # print(f"pred_loss is {pred_loss}")
-                    # print(f"cons_loss is {cons_loss}")
-                    # # print(f"cons_loss is {pred_loss_cp}")
-                    # print(f"cp_loss is {cp_loss}")
-                    # # exit(0)
 
-                    # loss = cons_loss + pred_loss
                     loss = pred_loss + cons_loss + cp_loss
                     loss.backward()
                     optimizer.step()
@@ -2165,8 +1613,6 @@ class LocalUpdateProp(object):
                     num_updates += 1
                     batch_loss.append(pred_loss.item())
                     batch_cons_loss.append(cons_loss.item())
-                    
-                    # if num_updates == self.args.local_updates_cp: break
 
                 epoch_loss.append(sum(batch_loss)/len(batch_loss))
                 epoch_cons_loss.append(sum(batch_cons_loss)/len(batch_cons_loss))
@@ -2219,11 +1665,6 @@ class LocalUpdateProp(object):
                     corrected_trace_lower = convert_best_trace(stl_lib_lower, corrected_trace_upper)
                     cons_loss = self.loss_func(output, corrected_trace_upper) + self.loss_func(output, corrected_trace_lower)
 
-                elif self.args.property_type == 'eventually':
-                    property_upper, _ = generate_property_test(X, property_type = "eventually-upper")
-                    property_lower, _ = generate_property_test(X, property_type = "eventually-lower")
-                    cons_loss = property_loss_eventually(output, property_upper, self.m, "eventually-upper") + property_loss_eventually(output, property_lower, self.m, "eventually-lower")
-            
                 else:
                     raise NotImplementedError
                 
@@ -2233,19 +1674,6 @@ class LocalUpdateProp(object):
                     if self.args.property_type == 'constraint':
                         batch_rho.append( 1-torch.count_nonzero(m(corrected_trace_lower - output))/len(corrected_trace_lower)/corrected_trace_lower.shape[1] )
                         batch_rho.append( 1-torch.count_nonzero(m(output - corrected_trace_upper))/len(corrected_trace_upper)/corrected_trace_upper.shape[1] )
-                    
-                    elif self.args.property_type == 'eventually':
-                        iterval = 2
-                        diff_yp = output - property_upper
-                        unsqueezed_diff = diff_yp.view(diff_yp.shape[0], int(diff_yp.shape[1]//iterval), iterval)
-                        diff_min, ind = torch.min(m(unsqueezed_diff), dim=2)
-                        batch_rho.append( 1-torch.count_nonzero(diff_min) / len(diff_min) / diff_min.shape[1] )
-                        diff_yp = property_lower - output
-                        unsqueezed_diff = diff_yp.view(diff_yp.shape[0], int(diff_yp.shape[1]//iterval), iterval)
-                        diff_min, ind = torch.min(m(unsqueezed_diff), dim=2)
-                        batch_rho.append( 1-torch.count_nonzero(diff_min) / len(diff_min) / diff_min.shape[1] )
-                    else:
-                        raise NotImplementedError
 
             epoch_loss.append(sum(batch_loss)/len(batch_loss))
             epoch_cons_loss.append(sum(batch_cons_loss)/len(batch_cons_loss))
