@@ -10,7 +10,7 @@ def args_parser():
 
     # main args
     parser.add_argument('--method', type=str, default="LogiCP", choices=["Ditto", "FedAvg", "FedRep", "IFCA", "FedProx", "FedSTL"])
-    parser.add_argument('--model', type=str, default="RNN", choices=["LSTM", "GRU", "RNN", "transformer"])
+    parser.add_argument('--model', type=str, default="transformer", choices=["LSTM", "GRU", "RNN", "transformer"])
     parser.add_argument('--epoch', type=int, default=10, help="# of training epoch")
     parser.add_argument('--mode', type=str, default="pretrain_calib", choices=['train', 'train-logic', 'eval', 'eval-sumo', 'pretrain_calib', 'train_cp', 'eval_visual'])
     parser.add_argument('--dataset', type=str, default="fhwa", choices=['sumo', 'fhwa', 'ct'])
@@ -31,7 +31,7 @@ def args_parser():
     
     # training args
     parser.add_argument('--batch_size', type=float, default=64, help="batch size")
-    parser.add_argument('--cp_epoch', type=int, default=10)
+    parser.add_argument('--cp_epoch', type=int, default=30)
     parser.add_argument('--max_lr', type=float, default=0.001, help="learning rate")
     parser.add_argument('--grad_clip', type=float, default=0.1, help="grad clip")
     parser.add_argument('--weight_decay', type=float, default=1e-4, help="weight decay")

@@ -27,3 +27,5 @@ hdd_temp/
 .conda/
 .idea/
 synth.log
+# utils/update.py
+# utils_training.py
