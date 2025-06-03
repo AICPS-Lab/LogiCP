@@ -10,7 +10,7 @@ import numpy as np
 import torch.nn as nn
 from IoTData import SequenceDataset
 from torch.utils.data import DataLoader
-from network import ShallowRegressionLSTM, ShallowRegressionGRU, ShallowRegressionRNN, MultiRegressionLSTM, MultiRegressionGRU, MultiRegressionRNN
+from network import ShallowRegressionLSTM, ShallowRegressionGRU, ShallowRegressionRNN
 from utils.update import LocalUpdate, LocalUpdateProp, compute_cluster_id, cluster_id_property
 from transformer import TimeSeriesTransformer
 import numpy as np
@@ -226,7 +226,7 @@ def get_shared_dataset(client_id, dataset_name):
     if dataset_name == 'fhwa':    
         dataset_path = "fhwa_dataset/" 
     elif dataset_name == 'ct':
-        dataset_path = "/home/Datasets/ct_v4_100/"
+        dataset_path = "ct_dataset/"
 
     for fold in ["train", "test", "val"]:
         x_file = dataset_path+fold+"_"+str(client_id)+"_x.npy"
@@ -293,8 +293,6 @@ def get_result_file(cp_value, client_quantile, data_quantile):
     }
 
     print(f"cp result file generated.")
-
-    # print(f"result file looks like {result_file}")
 
     return result_file
 

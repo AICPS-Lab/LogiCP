@@ -392,14 +392,6 @@ def main():
             print(sum(local_loss)/len(local_loss))
             print("===============")
 
-            print("Local loss:")
-            std = np.std(local_loss)
-            error = 1.96 * std / np.sqrt(len(local_loss))
-            print("Mean:", np.mean(local_loss))
-            print("Mean_second", sum(local_loss)/len(local_loss))
-            print("Error bar:", error)
-            print()
-
         model_path = "hdd/saved_models/"
         glob_model.load_state_dict(glob_weight)
         save_model(model_path, glob_model, 

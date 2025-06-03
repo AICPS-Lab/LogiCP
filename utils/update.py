@@ -132,14 +132,9 @@ def new_loss_func(cp_value, y_gt, y_pred):
 
 def loss_func_cp(cp_value, y_gt, y_pred):
 
-    # print()
-    # print('using the correct cp. ')
-    # print()
-
     if isinstance(cp_value, list):
         cp_value = torch.tensor(cp_value, dtype=y_pred.dtype, device=y_pred.device)
     
-    # Match shape (broadcasting if needed)
     if cp_value.dim() == 1:
         cp_value = cp_value.unsqueeze(0).expand_as(y_pred)
 
