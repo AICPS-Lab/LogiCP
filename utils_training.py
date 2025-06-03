@@ -226,7 +226,7 @@ def get_shared_dataset(client_id, dataset_name):
     if dataset_name == 'fhwa':    
         dataset_path = "fhwa_dataset/" 
     elif dataset_name == 'ct':
-        dataset_path = "ct_dataset/"
+        dataset_path = "/home/Datasets/ct_v4_100/"
 
     for fold in ["train", "test", "val"]:
         x_file = dataset_path+fold+"_"+str(client_id)+"_x.npy"

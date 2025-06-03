@@ -132,9 +132,9 @@ def new_loss_func(cp_value, y_gt, y_pred):
 
 def loss_func_cp(cp_value, y_gt, y_pred):
 
-    print()
-    print('using the correct cp. ')
-    print()
+    # print()
+    # print('using the correct cp. ')
+    # print()
 
     if isinstance(cp_value, list):
         cp_value = torch.tensor(cp_value, dtype=y_pred.dtype, device=y_pred.device)
@@ -1344,7 +1344,7 @@ def cluster_id_property(cluster_models, client_dataset, args, idxs_users):
 
 
 
-def cluster_explore(net, w_glob_keys, lr, args, dataloaders, cp_value, lf = new_loss_func):
+def cluster_explore(net, w_glob_keys, lr, args, dataloaders, cp_value, lf = loss_func_cp):
 
     loss_func_cp = lf
     loss_func = nn.MSELoss(reduction='mean')
@@ -1551,7 +1551,7 @@ class LocalUpdateProp(object):
 
         return c_tuda_list
 
-    def train(self, net, w_glob_keys, last=False, dataset_test=None, lf = new_loss_func, ind=-1, idx=-1, lr=0.001, cp_value=None):
+    def train(self, net, w_glob_keys, last=False, dataset_test=None, lf = loss_func_cp, ind=-1, idx=-1, lr=0.001, cp_value=None):
 
         self.loss_func_cp = lf
         self.loss_func = nn.MSELoss(reduction='mean')

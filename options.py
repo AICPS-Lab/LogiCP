@@ -13,7 +13,7 @@ def args_parser():
     parser.add_argument('--model', type=str, default="RNN", choices=["LSTM", "GRU", "RNN", "transformer"])
     parser.add_argument('--epoch', type=int, default=10, help="# of training epoch")
     parser.add_argument('--mode', type=str, default="eval", choices=['train', 'train-logic', 'eval', 'eval-sumo', 'pretrain_calib', 'train_cp', 'eval_visual'])
-    parser.add_argument('--dataset', type=str, default="fhwa", choices=['sumo', 'fhwa', 'ct'])
+    parser.add_argument('--dataset', type=str, default="ct", choices=['sumo', 'fhwa', 'ct'])
     parser.add_argument('--client', type=int, default=100)
     parser.add_argument('--cluster', type=int, default=10)
     parser.add_argument('--frac', type=float, default=1, help="the fraction of clients: C")
@@ -31,7 +31,7 @@ def args_parser():
     
     # training args
     parser.add_argument('--batch_size', type=float, default=64, help="batch size")
-    parser.add_argument('--cp_epoch', type=int, default=30)
+    parser.add_argument('--cp_epoch', type=int, default=10)
     parser.add_argument('--max_lr', type=float, default=0.001, help="learning rate")
     parser.add_argument('--grad_clip', type=float, default=0.1, help="grad clip")
     parser.add_argument('--weight_decay', type=float, default=1e-4, help="weight decay")

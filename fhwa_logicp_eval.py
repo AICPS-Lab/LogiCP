@@ -67,7 +67,7 @@ def main():
     
     for c in range(args.client): # 100
         client_dataset[c] = {}
-        train_loader_private, trainset_shared, calib_loader_private, pre_loader_private, nor_loader_private, val_loader, test_loader, dataset_len = get_shared_dataset_2(c, args.dataset)
+        train_loader_private, trainset_shared, calib_loader_private, pre_loader_private, nor_loader_private, val_loader, test_loader, dataset_len = get_shared_dataset(c, args.dataset)
         client_dataset[c]["train_private"] = train_loader_private # dataloader for the private training data
         client_dataset[c]["train_shared"] = trainset_shared # the shared data in training 
         client_dataset[c]["val"] = val_loader # dataloader for the validation data

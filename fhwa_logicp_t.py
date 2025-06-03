@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from utils.update import LocalUpdate, LocalUpdateProp, compute_cluster_id_eval, cluster_id_property, cluster_explore, dic_loader, find_group_info
-from utils_training import get_device, to_device, save_model, get_client_dataset, model_init, get_shared_dataset_2
+from utils_training import get_device, to_device, save_model, model_init, get_shared_dataset
 import os
 import copy
 from options import args_parser
@@ -53,7 +53,7 @@ def main():
     
     for c in range(args.client): # 100
         client_dataset[c] = {}
-        train_loader_private, trainset_shared, calib_loader_private, pre_loader_private, nor_loader_private, val_loader, test_loader, dataset_len = get_shared_dataset_2(c, args.dataset)
+        train_loader_private, trainset_shared, calib_loader_private, pre_loader_private, nor_loader_private, val_loader, test_loader, dataset_len = get_shared_dataset(c, args.dataset)
         client_dataset[c]["train_private"] = train_loader_private # dataloader for the private training data
         client_dataset[c]["train_shared"] = trainset_shared # the shared data in training 
         client_dataset[c]["val"] = val_loader # dataloader for the validation data
