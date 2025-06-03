@@ -16,7 +16,9 @@ matplotlib==3.5.1, numpy==1.21.6, pandas==1.3.5, parsimonious==0.10.0, scikit_le
 - The folder telex includes the code needed for specification inference, where `scorer.py` includes STL metrics and the implementations of Equation 3 defined in the text. 
 Additionally, `synth.py` includes the code for generating specifications from STL templates.  -->
 ### 2. Dataset 
-For the original city temperature dataset used in the paper, please refer to the following citation and link.
+For the source of FHWA dataset used in the paper, please refer to Federal Highway Administration. 
+
+For the source of city temperature dataset used in the paper, please refer to the following citation and link.
 
 University of Dayton, "Temperature Data from Around the World Attracts Web Visitors to University of Dayton Site" (2002). News
 Releases. 9948.
