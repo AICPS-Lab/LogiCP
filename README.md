@@ -43,44 +43,44 @@ For the formal logic inference, please refer to - https://github.com/susmitjha/T
 
     For pretrain process, run: 
     ```
-    python main.py --model RNN --mode pretrain_calib --dataset fhwa --client 50 --cluster 5 --frac 1 --sep_type spec_m --cp_epoch 30
+    python main.py --model RNN --mode pretrain_calib --dataset fhwa --client 100 --cluster 10 --frac 1 --sep_type spec_m --cp_epoch 30
     ```
 
     For training process, run:
     ```
-    python main.py --model RNN --mode train_cp --dataset fhwa --client 50 --cluster 5 --frac 1 --sep_type spec_m --cp_epoch 30
+    python main.py --model RNN --mode train_cp --dataset fhwa --client 100 --cluster 10 --frac 1 --sep_type spec_m --cp_epoch 30
     ```
 
     For evaluation of LogiCP and LogiCP-S, run: 
     ```
-    python fhwa_logicp_eval.py --model RNN --mode eval --dataset fhwa --client 50 --cluster 5 --frac 1 --sep_type spec_m --cp_epoch 30
+    python eval.py --model RNN --mode eval --dataset fhwa --client 100 --cluster 10 --frac 1 --sep_type spec_m --cp_epoch 30
     ```
 
     For evaluation of LogiCP-T, run 
     ```
-    python fhwa_logicp_t.py --model RNN --mode eval --dataset fhwa --client 50 --cluster 5 --frac 1 --sep_type spec_m --cp_epoch 30
+    python fhwa_logicp_t.py --model RNN --mode eval --dataset fhwa --client 100 --cluster 10 --frac 1 --sep_type spec_m --cp_epoch 30
     ```
 
 - To train the LogiCP model on CT data, use the following command: 
 
     For pretrain process, run: 
     ```
-    python main.py --mode pretrain_calib --dataset ct --client 50 --cluster 5 --frac 1 --sep_type spec_m --cp_epoch 30
+    python main.py --mode pretrain_calib --dataset ct --client 100 --cluster 10 --frac 1 --sep_type spec_m --cp_epoch 30
     ```
 
     For training process, run:
     ```
-    python main.py --mode train_cp --dataset ct --client 50 --cluster 5 --frac 1 --sep_type spec_m --cp_epoch 30
+    python main.py --mode train_cp --dataset ct --client 100 --cluster 10 --frac 1 --sep_type spec_m --cp_epoch 30
     ```
 
     For evaluation of LogiCP and LogiCP-S, run: 
     ```
-    python ct_logicp_eval.py --model RNN --mode eval --dataset ct --client 50 --cluster 5 --frac 1 --sep_type spec_m --cp_epoch 30
+    python ct_logicp_eval.py --model RNN --mode eval --dataset ct --client 100 --cluster 10 --frac 1 --sep_type spec_m --cp_epoch 30
     ```
 
     For evaluation of LogiCP-T, run 
     ```
-    python ct_logicp_t.py --model RNN --mode eval --dataset fhwa --client 50 --cluster 5 --frac 1 --sep_type spec_m --cp_epoch 30
+    python ct_logicp_t.py --model RNN --mode eval --dataset fhwa --client 100 --cluster 10 --frac 1 --sep_type spec_m --cp_epoch 30
     ```
 
 ### 5. Parameter Descriptions

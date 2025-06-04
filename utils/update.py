@@ -122,7 +122,7 @@ def new_cp_loss(cp_value, y_gt, y_pred):
     return squared_loss.mean()
 
 def new_cp_loss_transformer(cp_value, y_gt, y_pred):
-
+    
     if y_gt.dim() == 2:
         y_gt = y_gt.unsqueeze(2)
 
@@ -133,7 +133,8 @@ def new_cp_loss_transformer(cp_value, y_gt, y_pred):
         cp_value = cp_value.view(1, -1, 1).expand_as(y_pred)
 
     error = torch.abs(y_pred - y_gt)
-    squared_loss = torch.where(error < cp_value, error**2, cp_value**2)
+    excess = torch.clamp(error - cp_value, min=0.0)
+    squared_loss = excess ** 2
 
     return squared_loss.mean()
 
@@ -1140,7 +1141,103 @@ class LocalUpdateProp(object):
                 )
             else:
                 return net.state_dict(), sum(epoch_loss) / len(epoch_loss), sum(epoch_cons_loss) / len(epoch_cons_loss), self.idxs 
+    
+    def cp_teacher_fhwa(self, net, w_glob_keys, last=False, dataset_test=None, ind=-1, idx=-1, lr=0.001, rho=False, cp_value = None):
+
+        self.loss_func = nn.MSELoss(reduction='mean')
+
+        net.batch_size = 20
+
+        m = nn.ReLU()
+        epoch_rho = []
+        epoch_loss = []
+        epoch_cons_loss = []
+        num_updates = 0
+
+        if net.model_type == 'transformer':
+            if rho == True:
+                ep_ls, ep_cons_ls, ep_rho, sr, fr, sp, fp = transformer_prop_cp_teacher(self.ldr_val, net, self.args, self.loss_func, rho=True, cp_value=cp_value)
+                return ep_ls, ep_cons_ls, self.idxs, ep_rho
+            else:
+                net, ep_ls, ep_cons_ls = transformer_prop_cp_teacher(self.ldr_val, net, self.args, self.loss_func, rho=False)
+                return net.state_dict(), ep_ls, ep_cons_ls, self.idxs
         
+        else:
+            hidden_1, hidden_2 = net.init_hidden(), net.init_hidden()
+
+            for name, param in net.named_parameters():
+                param.requires_grad = False
+
+            batch_rho = []
+            batch_loss = []
+            batch_cons_loss = []
+            temp = 0
+            for X, y in self.ldr_val:
+
+                net.eval()
+                hidden_1 = repackage_hidden(hidden_1)
+                hidden_2 = repackage_hidden(hidden_2)
+                output, hidden_1, hidden_2 = net(X, hidden_1, hidden_2)
+
+                property_upper, stl_lib_upper = generate_property_test(X, property_type = "upper")
+                corrected_trace_upper = convert_best_trace(stl_lib_upper, output)
+                property_lower, stl_lib_lower = generate_property_test(X, property_type = "lower")
+                corrected_trace_lower = convert_best_trace(stl_lib_lower, corrected_trace_upper)
+                output = corrected_trace_lower
+
+                for i in range(len(output)):
+                    y_pred_i = output[i].detach().cpu().numpy()
+                    y_corrected_upper = property_upper[i].detach().cpu().numpy()[:24]
+
+                    y_corrected_lower = property_lower[i].detach().cpu().numpy()[:24]
+
+                    for j in range(len(y_pred_i)):
+                        assert y_corrected_upper[j] >= y_corrected_lower[j]
+
+                        if y_pred_i[j] > y_corrected_upper[j]:
+                            cp_lower = y_pred_i[j] - cp_value[j]
+                            if cp_lower > y_corrected_upper[j]:
+                                y_pred_i[j] = cp_lower
+                            else: 
+                                y_pred_i[j] = y_corrected_upper[j]
+
+                        elif y_pred_i[j] < y_corrected_lower[j]:
+                            cp_upper = y_pred_i[j] + cp_value[j]
+                            if cp_upper < y_corrected_lower[j]:
+                                y_pred_i[j] = cp_upper
+                            else: 
+                                y_pred_i[j] = y_corrected_lower[j]
+                        
+                        else:
+                            assert y_pred_i[j] <= y_corrected_upper[j] and y_pred_i[j] >= y_corrected_lower[j]
+                            y_pred_i[j] = y_pred_i[j]
+                    
+                    y_pred_i_tensor = torch.from_numpy(y_pred_i)
+                    output[i] = y_pred_i_tensor
+
+
+                cons_loss = self.loss_func(output, corrected_trace_upper) + self.loss_func(output, corrected_trace_lower)
+                pred_loss = self.loss_func(output, y)
+
+                batch_loss.append(pred_loss.item())
+                batch_cons_loss.append(cons_loss.item())
+
+                if rho==True:
+                    if self.args.property_type == 'constraint':
+                        batch_rho.append( 1-torch.count_nonzero(m(corrected_trace_lower - output))/len(corrected_trace_lower)/corrected_trace_lower.shape[1] )
+                        batch_rho.append( 1-torch.count_nonzero(m(output - corrected_trace_upper))/len(corrected_trace_upper)/corrected_trace_upper.shape[1] )
+
+            epoch_loss.append(sum(batch_loss)/len(batch_loss))
+            epoch_cons_loss.append(sum(batch_cons_loss)/len(batch_cons_loss))
+            if rho==True:
+                epoch_rho.append(sum(batch_rho)/len(batch_rho))
+            
+        if rho==True:
+            return sum(epoch_loss)/len(epoch_loss), sum(epoch_cons_loss)/len(epoch_cons_loss), self.idxs, sum(epoch_rho)/len(epoch_rho)
+        else:
+            return net.state_dict(), sum(epoch_loss)/len(epoch_loss), sum(epoch_cons_loss)/len(epoch_cons_loss), self.idxs
+        
+    
     def cp_teacher_ct(self, net, w_glob_keys, last=False, dataset_test=None, ind=-1, idx=-1, lr=0.001, rho=False, cp_value = None):
 
         self.loss_func = nn.MSELoss(reduction='mean')
@@ -1194,7 +1291,6 @@ class LocalUpdateProp(object):
                         assert y_corrected_upper[j] >= y_corrected_lower[j]
 
                         if y_pred_i[j] > y_corrected_upper[j]:
-                            # temp+=1
                             cp_lower = y_pred_i[j] - cp_value[j]
                             if cp_lower > y_corrected_upper[j]:
                                 y_pred_i[j] = cp_lower
@@ -1202,7 +1298,6 @@ class LocalUpdateProp(object):
                                 y_pred_i[j] = y_corrected_upper[j]
 
                         elif y_pred_i[j] < y_corrected_lower[j]:
-                            # temp+=1
                             cp_upper = y_pred_i[j] + cp_value[j]
                             if cp_upper < y_corrected_lower[j]:
                                 y_pred_i[j] = cp_upper
@@ -1211,8 +1306,6 @@ class LocalUpdateProp(object):
                         
                         else:
                             assert y_pred_i[j] <= y_corrected_upper[j] and y_pred_i[j] >= y_corrected_lower[j]
-                            # y_pred_i[j] = max(y_pred_i[j], y_corrected_upper[j])
-                            # temp += 1
                             y_pred_i[j] = y_pred_i[j]
                     
                     y_pred_i_tensor = torch.from_numpy(y_pred_i)

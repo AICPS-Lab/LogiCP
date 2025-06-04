@@ -1,3 +1,9 @@
+"""
+
+The file for LogiCP-T performance evaluation on fhwa dataset.
+
+"""
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -69,16 +75,22 @@ def main():
     if args.mode == "eval":
 
         model_types = ["{}".format(args.model)]
-
         cp_dic = dic_loader(args)
+
         cluster_id = {int(group): clients_data["clients"] for group, clients_data in cp_dic.items()}
         client2cluster = {client: group for group, clients in cluster_id.items() for client in clients}
+
         print("==============================================================")
         for type in model_types:
-            print("Evaluating FedSTL on model", type)
+            print("Evaluating LogiCP on model", type)
             local_loss = []
             local_cons_loss = []
             local_rho = []
+
+            s_case = 0
+            f_case = 0
+            sp = 0
+            fp = 0
 
             model_path = "hdd/saved_models/"
 
@@ -91,11 +103,15 @@ def main():
                 cp_value = find_group_info(cp_dic, c)
 
                 local = LocalUpdateProp(args=args, dataset=client_dataset[c], idxs=c)
-                loss, cons_loss, idx, rho_perc= local.cp_teacher_fhwa(net=model.to(args.device), idx=c, w_glob_keys=None, rho=True, cp_value=cp_value)
+                loss, cons_loss, idx, rho_perc, sr, fr, sr_2, fr_2 = local.cp_teacher(net=model.to(args.device), idx=c, w_glob_keys=None, rho=True, cp_value=cp_value)
                 local_loss.append(copy.deepcopy(loss))
                 local_cons_loss.append(copy.deepcopy(cons_loss))
                 local_rho.append(copy.deepcopy(rho_perc.item()))
                 print(loss, cons_loss, idx, rho_perc)
+                s_case += sr_2
+                f_case += fr_2
+                sp += sr
+                fp += fr 
             
             print("Local loss:")
             std = np.std(local_loss)
@@ -110,6 +126,9 @@ def main():
             print("Mean:", np.mean(local_rho))
             print("Error bar:", error)
             print()
+
+            print("CP Satisfaction Rate for LogiCP-T:")
+            print(s_case / (s_case + f_case))
 
 
 if __name__ == '__main__':

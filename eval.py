@@ -9,11 +9,11 @@ import numpy as np
 import torch
 import torch.nn as nn
 from utils.update import LocalUpdateProp, compute_cluster_id_eval, cluster_id_property, cluster_explore
-from utils_training import get_device, to_device, save_model, get_client_dataset, get_shared_dataset, model_init, get_shared_dataset_1, get_shared_dataset_2
+from utils_training import get_device, to_device, save_model, get_shared_dataset, model_init
 import os
 import copy
 from options import args_parser
-from network import ShallowRegressionLSTM, ShallowRegressionGRU, ShallowRegressionRNN, MultiRegressionLSTM, MultiRegressionGRU, MultiRegressionRNN
+from network import ShallowRegressionLSTM, ShallowRegressionGRU, ShallowRegressionRNN
 from transformer import TimeSeriesTransformer
 import random
 random.seed(0)
@@ -64,22 +64,10 @@ def main():
     args.device = get_device()
     
     client_dataset = {}
-
-    # for c in range(args.client): # 100
-    #     client_dataset[c] = {}
-    #     train_loader_private, trainset_shared, cal_loader_private, cal_shared, val_loader, test_loader, dataset_len = get_shared_dataset_1(c, args.dataset)
-        
-    #     client_dataset[c]["train_private"] = train_loader_private # private dataset loader
-    #     client_dataset[c]["train_shared"] = trainset_shared
-    #     client_dataset[c]["val"] = val_loader
-    #     client_dataset[c]["test"] = test_loader
-    #     client_dataset[c]["len"] = dataset_len
-    #     client_dataset[c]["cal"] = cal_loader_private
-    #     client_dataset[c]["calib_shared"] = cal_shared
     
     for c in range(args.client): # 100
         client_dataset[c] = {}
-        train_loader_private, trainset_shared, calib_loader_private, pre_loader_private, nor_loader_private, val_loader, test_loader, dataset_len = get_shared_dataset_2(c, args.dataset)
+        train_loader_private, trainset_shared, calib_loader_private, pre_loader_private, nor_loader_private, val_loader, test_loader, dataset_len = get_shared_dataset(c, args.dataset)
         client_dataset[c]["train_private"] = train_loader_private # dataloader for the private training data
         client_dataset[c]["train_shared"] = trainset_shared # the shared data in training 
         client_dataset[c]["val"] = val_loader # dataloader for the validation data
@@ -105,7 +93,6 @@ def main():
             local_loss = []
             local_cons_loss = []
             local_rho = []
-            # if args.dataset == 'fhwa':
                 
             model_path = "hdd/saved_models/"
 
@@ -120,24 +107,6 @@ def main():
                 local_cons_loss.append(copy.deepcopy(cons_loss))
                 local_rho.append(copy.deepcopy(rho_perc.item()))
                 print(loss, cons_loss, idx, rho_perc)
-            
-            # Sort and display client losses
-            sorted_losses = sort_client_losses(local_loss)
-            total_loss = []
-            index_list = []
-            print("Sorted client losses (index, loss):")
-            for idx, loss in sorted_losses:
-                print(f"Client {idx}: Loss = {loss:.4f}")
-                total_loss.append(loss)
-                index_list.append(idx)
-            
-            print(np.mean(total_loss[:70]))
-            print(np.mean(total_loss[:60]))
-            print(np.mean(total_loss[:80]))
-            print(np.mean(total_loss[:50]))
-            print(np.mean(total_loss[:100]))
-            print(index_list[:100])
-            print(len(index_list[:100]))
 
             print("Local loss:")
             std = np.std(local_loss)
@@ -160,7 +129,6 @@ def main():
             print("Error bar:", error)
             print()
 
-        # exit(0)
         print("==============================================================")
         for type in model_types:
             print("Evaluating LogiCP on model", type)
@@ -180,8 +148,7 @@ def main():
 
             args.frac = 1
             idxs_users = [i for i in range(args.client)]
-            # print(idxs_users)
-            # exit(0)
+
             cluster_id = cluster_id_property(cluster_models, client_dataset, args, idxs_users)   # cluster: clients
             client2cluster = get_dict_keys(cluster_id, idxs_users)
 
@@ -218,110 +185,6 @@ def main():
             print("Error bar:", error)
             print()
 
-        exit(0)
-        print("==============================================================")
-
-        for type in model_types:
-            print("Evaluating IFCA on model", type)
-            local_loss = []
-            local_cons_loss = []
-            local_rho = []
-
-            model_path = f"hdd_{args.method}/saved_models/"
-            
-            net_path = os.path.join(model_path, 'fhwa_'+type+'_IFCA_epoch_'+'{}.pt'.format(args.cp_epoch))
-            glob_model = get_eval_model(net_path, type)
-            glob_model.eval()
-
-            for c in range(args.client):
-                local = LocalUpdateProp(args=args, dataset=client_dataset[c], idxs=c)
-                loss, cons_loss, idx, rho_perc = local.test(net=glob_model.to(args.device), idx=c, w_glob_keys=None, rho=True)
-                local_loss.append(copy.deepcopy(loss))
-                local_cons_loss.append(copy.deepcopy(cons_loss))
-                local_rho.append(copy.deepcopy(rho_perc.item()))
-                print(loss, cons_loss, idx, rho_perc)
-            
-            print("Local loss:")
-            std = np.std(local_loss)
-            error = 1.96 * std / np.sqrt(len(local_loss))
-            print("Mean:", np.mean(local_loss))
-            print("Error bar:", error)
-            print()
-
-            print("Local cons loss:")
-            std = np.std(local_cons_loss)
-            error = 1.96 * std / np.sqrt(len(local_cons_loss))
-            print("Mean:", np.mean(local_cons_loss))
-            print("Error bar:", error)
-            print()
-
-            print("Local rho:")
-            std = np.std(local_rho)
-            error = 1.96 * std / np.sqrt(len(local_rho))
-            print("Mean:", np.mean(local_rho))
-            print("Error bar:", error)
-            print()
-
-
-        print("==============================================================")
-        for type in model_types:
-            print("Evaluating IFCA on model", type)
-            local_loss = []
-            local_cons_loss = []
-            local_rho = []
-            
-            net_path = os.path.join(model_path, 'fhwa_'+type+'_IFCA_epoch_'+'{}.pt'.format(args.cp_epoch))
-            glob_model = get_eval_model(net_path, type)
-            glob_model.eval()
-
-            cluster_models = []
-            for c in range(args.cluster):
-                net_path = os.path.join(model_path, 'fhwa_'+type+'_IFCA_Cluster_'+str(c)+'_epoch_'+'{}.pt'.format(args.cp_epoch))
-                c_model = get_eval_model(net_path, type)
-                c_model.eval()
-                cluster_models.append(c_model)
-
-            args.frac = 1
-            idxs_users = [i for i in range(args.client)]
-            cluster_id = compute_cluster_id_eval(cluster_models, client_dataset, args, idxs_users)   # cluster: clients
-            client2cluster = get_dict_keys(cluster_id, idxs_users)
-
-            for c in range(args.client):
-                net_path = os.path.join(model_path, 'fhwa_'+type+'_IFCA_Client_'+str(c)+'_epoch_'+'{}.pt'.format(args.cp_epoch))
-                model = get_eval_model(net_path, type)
-                model.load_state_dict(cluster_models[client2cluster[c]].state_dict())
-                model.eval()
-                local = LocalUpdateProp(args=args, dataset=client_dataset[c], idxs=c)
-                loss, cons_loss, idx, rho_perc = local.test(net=model.to(args.device), idx=c, w_glob_keys=None, rho=True)
-                local_loss.append(copy.deepcopy(loss))
-                local_cons_loss.append(copy.deepcopy(cons_loss))
-                local_rho.append(copy.deepcopy(rho_perc.item()))
-                print(loss, cons_loss, idx, rho_perc)
-            
-            print("Local loss:")
-            std = np.std(local_loss)
-            error = 1.96 * std / np.sqrt(len(local_loss))
-            print("Mean:", np.mean(local_loss))
-            print("Error bar:", error)
-            print()
-
-            print("Local cons loss:")
-            std = np.std(local_cons_loss)
-            error = 1.96 * std / np.sqrt(len(local_cons_loss))
-            print("Mean:", np.mean(local_cons_loss))
-            print("Error bar:", error)
-            print()
-
-            print("Local rho:")
-            std = np.std(local_rho)
-            error = 1.96 * std / np.sqrt(len(local_rho))
-            print("Mean:", np.mean(local_rho))
-            print("Error bar:", error)
-            print()
-
-
-        exit(0)
-
 if __name__ == '__main__':
     try:
         main()
@@ -330,5 +193,3 @@ if __name__ == '__main__':
     
     finally:
         print('\nDone.')
-        # sys.stdout.close()
-        # sys.stdout=stdoutOrigin

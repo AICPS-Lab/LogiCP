@@ -29,3 +29,4 @@ hdd_temp/
 synth.log
 # utils/update.py
 # utils_training.py
+cp_rate_calculation.py

@@ -209,8 +209,11 @@ def main():
             print("Error bar:", error)
             print()
 
+            print("CP Satisfaction Rate:")
             print(sn / (sn + fn))
-    
+            print()
+
+            
     exit(0)
     if args.mode == "eval" and args.method == 'IFCA':
 

@@ -59,8 +59,6 @@ def new_loss_func(cp_value, y_gt, y_pred):
 
     return loss
 
-def cp_region_calculation
-
 def main():
     args = args_parser()
     args.device = get_device()
