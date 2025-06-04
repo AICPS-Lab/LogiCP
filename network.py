@@ -111,7 +111,7 @@ class ShallowRegressionLSTM(nn.Module):
         self.input_dim = input_dim
         self.time_steps = time_steps
 
-        self.lstm_1 = nn.LSTMCell(input_size=self.time_steps, hidden_size=self.hidden_dim)  # TODO: fix input size
+        self.lstm_1 = nn.LSTMCell(input_size=self.time_steps, hidden_size=self.hidden_dim)
         self.lstm_2 = nn.LSTMCell(input_size=self.hidden_dim, hidden_size=self.hidden_dim)
         self.fc = nn.Linear(in_features=self.hidden_dim, out_features=1)
 
@@ -141,7 +141,7 @@ class ShallowRegressionGRU(nn.Module):
         self.input_dim = input_dim
         self.time_steps = time_steps
 
-        self.gru_1 = nn.GRUCell(input_size=self.time_steps, hidden_size=self.hidden_dim)  # TODO: fix input size
+        self.gru_1 = nn.GRUCell(input_size=self.time_steps, hidden_size=self.hidden_dim) 
         self.gru_2 = nn.GRUCell(input_size=self.hidden_dim, hidden_size=self.hidden_dim)
         self.fc = nn.Linear(in_features=self.hidden_dim, out_features=1)
 

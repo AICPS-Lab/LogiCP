@@ -7,7 +7,7 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 from IoTData import SequenceDataset
-from utils.update import LocalUpdateProp, cluster_explore, dic_loader, find_group_info, loss_func_cp
+from utils.update import LocalUpdateProp, cluster_explore, dic_loader, find_group_info
 from utils_training import to_device, save_model, model_init, get_shared_dataset, save_cp_result_with_sep_type, get_cp_qq_settings
 import copy
 import matplotlib.pyplot as plt

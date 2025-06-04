@@ -26,11 +26,19 @@ https://ecommons.udayton.edu/news_rls/9948
 
 ### 3. Distributed CP Implementation
 
-For the distributed CP implementation, specifically, the computation of quantiles at both the client and cluster levels, please refer to compute.py. 
+For the distributed CP implementation, specifically, the computation of quantiles at both the client and cluster levels, please refer to https://github.com/pierreHmbt/FedCP-QQ.
 
-The original source of this implementation is adapted from: https://github.com/pierreHmbt/FedCP-QQ
+- `computation_of_M.ipynb` computes the setting for local quantile and cluster quantile. 
 
-### 4. LogiCP Network Training and Evaluation 
+### 4. Formal Logic Inference 
+
+For the formal logic inference, please refer to - https://github.com/susmitjha/TeLEX. The folder telex includes the code to implement Formal Logic Inference.
+
+- `scorer.py` includes STL quantitative metrics.
+- `synth.py` includes the code for generating specifications from STL templates. 
+
+
+### 5. LogiCP Network Training and Evaluation 
 - To train the LogiCP model on FHWA data, use the following command: 
 
     For pretrain process, run: 
@@ -89,7 +97,7 @@ We provide a description of the parameters implemented in option.py below:
 `--max_lr` Maximum learning rate\
 
 For additional configuration details, please refer directly to option.py.
-
+<!-- 
 ### 6. Baseline Network Training and Evaluation 
 - To train the FedAvg model on FHWA data, use the following command: 
 
@@ -134,7 +142,7 @@ For additional configuration details, please refer directly to option.py.
     For evaluation, run: 
     ```
     python eval.py --method FedSTL --mode eval --dataset fhwa --client 50 --cluster 5 --frac 1 --cp_epoch 30
-    ```
+    ``` -->
 
 ### 6. Backbone models implementation
 RNN, LSTM, GRU, Transformer were implemented in the file `network.py` and `transform.py`. 

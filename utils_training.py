@@ -14,7 +14,6 @@ from network import ShallowRegressionLSTM, ShallowRegressionGRU, ShallowRegressi
 from utils.update import LocalUpdateProp, cluster_id_property
 from transformer import TimeSeriesTransformer
 import numpy as np
-from class_CP_QQ import calc_matrix_M
 import copy
 import os
 
@@ -226,7 +225,7 @@ def get_shared_dataset(client_id, dataset_name):
     if dataset_name == 'fhwa':    
         dataset_path = "fhwa_dataset/" 
     elif dataset_name == 'ct':
-        dataset_path = "/home/Datasets/ct_v4_100/"
+        dataset_path = "ct_dataset/"
 
     for fold in ["train", "test", "val"]:
         x_file = dataset_path+fold+"_"+str(client_id)+"_x.npy"

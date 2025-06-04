@@ -121,6 +121,22 @@ def new_cp_loss(cp_value, y_gt, y_pred):
 
     return squared_loss.mean()
 
+def new_cp_loss_transformer(cp_value, y_gt, y_pred):
+
+    if y_gt.dim() == 2:
+        y_gt = y_gt.unsqueeze(2)
+
+    if isinstance(cp_value, list):
+        cp_value = torch.tensor(cp_value, dtype=y_pred.dtype, device=y_pred.device)
+
+    if cp_value.dim() == 1:
+        cp_value = cp_value.view(1, -1, 1).expand_as(y_pred)
+
+    error = torch.abs(y_pred - y_gt)
+    capped_loss = torch.where(error < cp_value, error, cp_value)
+
+    return capped_loss.mean()
+
 def property_loss_eventually(y_pred, property, loss_function, type):
     iterval = 2
     if type == "eventually-upper":
@@ -557,15 +573,16 @@ def cluster_id_property(cluster_models, client_dataset, args, idxs_users):
 
     return cluster_id
 
-def cluster_explore(net, w_glob_keys, lr, args, dataloaders, cp_value, lf = None):
+def cluster_explore(net, w_glob_keys, lr, args, dataloaders, cp_value, lf = new_cp_loss, lf_transformer = new_cp_loss_transformer):
 
     loss_func_cp = lf
+    loss_func_transformer = lf_transformer
     loss_func = nn.MSELoss(reduction='mean')
 
     net.batch_size = 64
 
     if net.model_type == 'transformer':
-        net, avg_ep_loss = transformer_prop_train(dataloaders, net, args, loss_func, lr, w_glob_keys=w_glob_keys, cp_value=cp_value, lf=lf)
+        net, avg_ep_loss = transformer_prop_train(dataloaders, net, args, loss_func, lr, w_glob_keys=w_glob_keys, cp_value=cp_value, lf=loss_func_transformer)
         return net.state_dict(), avg_ep_loss
     
     if net.model_type != 'transformer':
@@ -762,14 +779,15 @@ class LocalUpdateProp(object):
 
         return c_tuda_list
 
-    def train(self, net, w_glob_keys, last=False, dataset_test=None, lf = new_cp_loss, ind=-1, idx=-1, lr=0.001, cp_value=None):
+    def train(self, net, w_glob_keys, last=False, dataset_test=None, lf = new_cp_loss, ind=-1, idx=-1, lr=0.001, cp_value=None, lf_transformer = new_cp_loss_transformer):
 
         self.loss_func_cp = lf
+        self.loss_func_cp_transformer = lf_transformer
         self.loss_func = nn.MSELoss(reduction='mean')
         net.batch_size = 64
         cp_value = cp_value
         if net.model_type == 'transformer':
-            net, avg_ep_loss = transformer_prop_train(self.ldr_train, net, self.args, self.loss_func, lr, w_glob_keys=w_glob_keys, cp_value=cp_value, lf=lf)
+            net, avg_ep_loss = transformer_prop_train(self.ldr_train, net, self.args, self.loss_func, lr, w_glob_keys=w_glob_keys, cp_value=cp_value, lf=self.loss_func_cp_transformer)
             return net.state_dict(), avg_ep_loss, self.idxs
         
         else:
