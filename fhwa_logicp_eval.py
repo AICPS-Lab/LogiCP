@@ -8,8 +8,8 @@ The main file for LogiCP and LogiCP-S evaluation on fhwa dataset.
 import numpy as np
 import torch
 import torch.nn as nn
-from utils.update import LocalUpdate, LocalUpdateProp, compute_cluster_id_eval, cluster_id_property, cluster_explore, dic_loader, find_group_info
-from utils_training import get_device, to_device, save_model, get_client_dataset, get_shared_dataset, model_init, get_shared_dataset_1, get_shared_dataset_2
+from utils.update import LocalUpdateProp, compute_cluster_id_eval, cluster_id_property, cluster_explore, dic_loader, find_group_info
+from utils_training import get_device, to_device, save_model, get_shared_dataset, model_init
 import os
 import copy
 from options import args_parser
@@ -84,7 +84,7 @@ def main():
     # evaluation on fhwa dataset.
 
     if args.mode == "eval" and args.method == 'LogiCP':
-        model_types = ["{}".format(args.models)]
+        model_types = ["{}".format(args.model)]
 
         cp_dic = dic_loader(args)
 

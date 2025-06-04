@@ -425,15 +425,6 @@ def save_cp_result_with_sep_type(args, client_dataset, global_quantile_array, gl
                 cluster_path_cp = f"hdd_{args.method}/cluster_cp_result_with/"
 
             save_cluster_result(cluster_path_cp, final_cp_file, args.method)
-
-    elif args.sep_type == 'vanilla':
-
-        quantiles_90 = np.quantile(global_quantile_array, cq, axis=0)
-        cp_size = quantiles_90.tolist()
-        result_file = get_result_file(cp_size, client_quantile=cq, data_quantile=dq)
-
-        cp_path = "hdd/cluster_cp_result_with_vanilla/"
-        save_cp_result(cp_path, result_file, args.method)
     
     elif "train" in args.mode and args.sep_type == "spec_m":
 

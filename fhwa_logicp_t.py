@@ -7,7 +7,7 @@ The file for LogiCP-T performance evaluation on fhwa dataset.
 import numpy as np
 import torch
 import torch.nn as nn
-from utils.update import LocalUpdate, LocalUpdateProp, compute_cluster_id_eval, cluster_id_property, cluster_explore, dic_loader, find_group_info
+from utils.update import LocalUpdateProp, compute_cluster_id_eval, cluster_id_property, cluster_explore, dic_loader, find_group_info
 from utils_training import get_device, to_device, save_model, model_init, get_shared_dataset
 import os
 import copy

@@ -8,7 +8,7 @@ The main file for evaluations.
 import numpy as np
 import torch
 import torch.nn as nn
-from utils.update import LocalUpdate, LocalUpdateProp, compute_cluster_id_eval, cluster_id_property, cluster_explore
+from utils.update import LocalUpdateProp, compute_cluster_id_eval, cluster_id_property, cluster_explore
 from utils_training import get_device, to_device, save_model, get_client_dataset, get_shared_dataset, model_init, get_shared_dataset_1, get_shared_dataset_2
 import os
 import copy

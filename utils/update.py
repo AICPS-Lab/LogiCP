@@ -133,9 +133,9 @@ def new_cp_loss_transformer(cp_value, y_gt, y_pred):
         cp_value = cp_value.view(1, -1, 1).expand_as(y_pred)
 
     error = torch.abs(y_pred - y_gt)
-    capped_loss = torch.where(error < cp_value, error, cp_value)
+    squared_loss = torch.where(error < cp_value, error**2, cp_value**2)
 
-    return capped_loss.mean()
+    return squared_loss.mean()
 
 def property_loss_eventually(y_pred, property, loss_function, type):
     iterval = 2
