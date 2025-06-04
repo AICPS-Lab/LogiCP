@@ -1,7 +1,7 @@
 LogiCP Implementation 
 ===============
 
-“This GitHub repository provides the implementation code for the LogiCP algorithm.”
+“This GitHub repository provides the implementation code for the LogiCP approach.”
 
 
 ### 1. Dependencies
@@ -87,7 +87,7 @@ For the formal logic inference, please refer to - https://github.com/susmitjha/T
 We provide a description of the parameters implemented in option.py below:
 `--mode` Select the mode from these options: `pretrain_calib`, `train_cp`, `eval`\
 `--sep_type` The way to determine cluster: `spec_m`, `value`\ 
-`--dataset` `fhwa`, `ct`\
+`--dataset` Select the dataset for implementation: `fhwa`, `ct`\
 `--client` The number of participating clients \
 `--cluster` The total number of clusters \
 `--frac` The client participation rate\
@@ -146,6 +146,8 @@ For additional configuration details, please refer directly to option.py.
 
 ### 6. Backbone models implementation
 RNN, LSTM, GRU, Transformer were implemented in the file `network.py` and `transform.py`. 
+
+
 
 
 “We would like to thank the following open-source repositories for their implementations of FL frameworks, CP implementation and Backbone Models:”
