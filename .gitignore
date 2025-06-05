@@ -31,3 +31,5 @@ synth.log
 # utils_training.py
 cp_rate_calculation.py
 ct_dataset/
+run.sh
+output.txt
